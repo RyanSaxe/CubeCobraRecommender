@@ -26,8 +26,6 @@ def exclude(card_file=None):
 
 def get_card_maps(map_file, exclude_file=None):
     exclusions = exclude(exclude_file)
-    if exclude:
-        exclusions = exclude
     names = json.load(open(map_file,'rb'))
     name_lookup = dict()
     card_to_int = dict()
@@ -50,17 +48,17 @@ def get_card_maps(map_file, exclude_file=None):
 
 def get_num_cubes(cube_folder):
     num_cubes = 0
-    for f in os.listdir(folder):
-        full_path = os.path.join(folder,f)
+    for f in os.listdir(cube_folder):
+        full_path = os.path.join(cube_folder,f)
         contents = json.load(open(full_path,'rb'))
         num_cubes += len(contents)
     return num_cubes
 
-def build_cubes(cube_folder, num_cubes, num_cards):
+def build_cubes(cube_folder, num_cubes, num_cards, name_lookup, card_to_int):
     cubes = np.zeros((num_cubes,num_cards))
     counter = 0
-    for f in os.listdir(folder):
-        full_path = os.path.join(folder,f)
+    for f in os.listdir(cube_folder):
+        full_path = os.path.join(cube_folder,f)
         contents = json.load(open(full_path,'rb'))
         for cube in contents:
             card_ids = []
@@ -74,7 +72,7 @@ def build_cubes(cube_folder, num_cubes, num_cards):
             counter += 1
     return cubes
 
-def create_adjacency_matrix(cubes, verbose=True, force_diag=0):
+def create_adjacency_matrix(cubes, verbose=True, force_diag=None):
     num_cards = cubes.shape[1]
     adj_mtx = np.empty((num_cards,num_cards))
     for i in range(num_cards):
@@ -103,10 +101,13 @@ def get_all_recs(cubes, verbose=True):
         out[i] = get_recs(cube)
     return out
 
-def get_recs(cube, int_to_card=None):
+def get_mtx_for_recs(cube, adj_mtx):
     cube_contains = np.where(cube == 1)[0]
     cube_missing = np.where(cube == 0)[0]
-    sub_adj_mtx = adj_mtx[cube_contains][:,cube_missing]
+    return adj_mtx[cube_contains][:,cube_missing]
+
+def get_recs(cube, adj_mtx, int_to_card=None):
+    sub_adj_mtx = get_mtx_for_recs(cube, adj_mtx)
     rec_ids = [
         cube_missing[i] for i  in
         sub_adj_mtx.sum(0).argsort()[::-1]
@@ -114,8 +115,26 @@ def get_recs(cube, int_to_card=None):
     if int_to_card is None:
         return rec_ids
     else:
-        return [int_card[i] for i in rec_ids]
+        return [int_to_card[i] for i in rec_ids]
 
+def dist_recs(cube, adj_mtx, dist_f, int_to_card):
+    cube_contains = np.where(cube == 1)[0]
+    cube_missing = np.where(cube == 0)[0]
+    sub_adj_mtx = adj_mtx[cube_contains][:,cube_missing]
+    out_mtx = np.empty(sub_adj_mtx.shape)
+    n_cols = sub_adj_mtx.shape[1]
+    for r_idx,row in enumerate(sub_adj_mtx):
+        new_row = np.empty(n_cols)
+        for c_idx in range(n_cols):
+            col = sub_adj_mtx[:,c_idx]
+            dist = dist_f(row,col)
+            new_row[c_idx] = dist
+        out_mtx[r_idx] = new_row
+    rec_ids = [
+        cube_missing[i] for i  in
+        sub_adj_mtx.sum(0).argsort()
+    ]
+    return [int_to_card[i] for i in rec_ids]
 
 
 
