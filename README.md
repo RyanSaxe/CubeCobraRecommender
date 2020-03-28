@@ -2,7 +2,9 @@
 
 Recommender System for [CubeCobra](https://cubecobra.com/).
 
-Note: this Recommender System contains no Machine Learning yet. I am currently working on getting this up and running, but we wanted to have an MVP (minimum-viable-product) for a quick launch to get feedback on the website. 
+*More explicit documentation on how this currently works coming soon.*
+
+*This Recommender System contains no Machine Learning yet. I am currently working on getting this up and running, but we wanted to have an MVP (minimum-viable-product) for a quick launch to get feedback on the website.*
 
 ## Generating The Adjacency Matrix
 
@@ -15,3 +17,4 @@ After generating the adjacency matrix, given any cube list, you can get the top 
 ## Git - LFS
 
 In order to upload the data used in this project, it was zipped and tracked via [git-lfs](https://git-lfs.github.com/). You may need to install this in order to download the repo.
+
