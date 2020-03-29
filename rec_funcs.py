@@ -13,6 +13,19 @@ def simple_recs(cube, adj_mtx, int_to_card=None):
     else:
         return [int_to_card[i] for i in rec_ids]
 
+def simple_cuts(cube, adj_mtx, int_to_card=None):
+    np.fill_diagonal(adj_mtx,0)
+    cube_contains = np.where(cube == 1)[0]
+    sub_adj_mtx = adj_mtx[cube_contains][:,cube_contains]
+    rec_ids = [
+        cube_contains[i] for i  in
+        sub_adj_mtx.sum(0).argsort()
+    ]
+    if int_to_card is None:
+        return rec_ids
+    else:
+        return [int_to_card[i] for i in rec_ids]
+
 @DeprecationWarning
 def dist_recs(cube, adj_mtx, dist_f, int_to_card, verbose=True):
     """
