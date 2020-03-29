@@ -1,1 +1,5 @@
+beautifulsoup4==4.8.2
+bs4==0.0.1
 numpy==1.18.2
+soupsieve==2.0
+Unidecode==1.1.1

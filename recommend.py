@@ -3,6 +3,7 @@ import sys
 from rec_funcs import simple_recs
 import json
 import numpy as np
+import unidecode
 
 args = sys.argv[1:]
 cube_name = args[0]
@@ -35,7 +36,13 @@ card_to_int = {v:k for k,v in int_to_card.items()}
 
 print ('Creating Cube Vector . . . \n')
 
-cube_indices = [card_to_int[name.lower()] for name in card_names]
+cube_indices = []
+for name in card_names:
+    idx = card_to_int.get(unidecode.unidecode(name.lower()))
+    #skip unknown cards (e.g. custom cards)
+    if idx is not None:
+        cube_indices.append(idx)
+
 cube = np.zeros(adj_mtx.shape[1])
 cube[cube_indices] = 1
 
