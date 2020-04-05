@@ -8,8 +8,11 @@ import urllib.request
 
 args = sys.argv[1:]
 cube_name = args[0]
+non_json = False
 if len(args) > 1:
     amount = int(args[1])
+    if len(args) > 2:
+        non_json = True
 else:
     amount = 100
 
@@ -52,14 +55,23 @@ model = load_model('ml_files/recommender.h5')
 print ('Generating Recommendations . . . \n')
 
 cube = np.array(cube,dtype=float).reshape(1,num_cards)
-results = model(cube)
+results = model(cube)[0].numpy()
 
-ranked = results[0].numpy().argsort()[::-1]
+ranked = results.argsort()[::-1]
+
+output = dict()
 
 recommended = 0
 for rec in ranked:
     if cube[0][rec] != 1:
-        print(int_to_card[rec])
+        card = int_to_card[rec]
+        if non_json:
+            print(card)
+        else:
+            output[card] = results[rec]
         recommended += 1
         if recommended >= amount:
             break
+
+if not non_json:
+    print('<result>',output,'</result>')
