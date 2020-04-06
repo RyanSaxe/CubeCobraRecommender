@@ -4,6 +4,8 @@ Recommender System for [CubeCobra](https://cubecobra.com/).
 
 The `web` folder contains a Flask API that will return the CubeCobraRecommeder recommendation in a json response. This is for integrating the machine learning algorithm on the website, which is currently being set up.
 
+Keras Model prototype is in the `model.py` file.
+
 *More explicit documentation on how this currently works coming soon.*
 
 ## Generating The Adjacency Matrix
