@@ -5,10 +5,7 @@ from tensorflow import keras
 import urllib.request
 
 
-ROOT = "https://cubecobra.com"
-
-
-def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
+def get_ml_recommend(cube_name, amount, root, non_json=False):
     url = root + "/cube/api/cubelist/" + cube_name
 
     fp = urllib.request.urlopen(url)
