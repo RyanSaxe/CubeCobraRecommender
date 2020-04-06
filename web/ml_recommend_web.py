@@ -1,4 +1,3 @@
-import os
 import json
 import numpy as np
 import unidecode
@@ -52,7 +51,7 @@ def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
             if non_json:
                 print(card)
             else:
-                output[card] = str(results[rec])
+                output[card] = results[rec].item()
             recommended += 1
             if recommended >= amount:
                 break
