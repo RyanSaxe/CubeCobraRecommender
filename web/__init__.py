@@ -10,7 +10,7 @@ app = Flask(__name__)
 def api():
     cube_name = request.args.get("cube_name")
     num_recs = request.args.get("num_recs")
-    root = request.args.get("root", "https://cubecobra.com")
+    root = request.args.get("root", "https://www.cubecobra.com")
     if not (cube_name and num_recs):
         return "Need cube_name and num_recs as parameters!"
     try:
