@@ -8,17 +8,19 @@ import urllib.request
 
 args = sys.argv[1:]
 cube_name = args[0]
-non_json = False
+non_json = True
+root = "https://cubecobra.com"
 if len(args) > 1:
     amount = int(args[1])
     if len(args) > 2:
-        non_json = True
+        root = args[2]
+        non_json = False
 else:
     amount = 100
 
 print('Getting Cube List . . . \n')
 
-url = "https://cubecobra.com/cube/api/cubelist/" + cube_name
+url = root + "/cube/api/cubelist/" + cube_name
 
 fp = urllib.request.urlopen(url)
 mybytes = fp.read()
