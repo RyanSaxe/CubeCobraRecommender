@@ -5,7 +5,10 @@ from tensorflow import keras
 import urllib.request
 
 
-def get_ml_recommend(cube_name, amount, root, non_json=False):
+ROOT = "https://cubecobra.com"
+
+
+def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
     url = root + "/cube/api/cubelist/" + cube_name
 
     fp = urllib.request.urlopen(url)
@@ -39,7 +42,10 @@ def get_ml_recommend(cube_name, amount, root, non_json=False):
 
     ranked = results.argsort()[::-1]
 
-    output = dict()
+    output = {
+        'additions':dict(),
+        'cuts':dict(),
+    }
 
     recommended = 0
     for rec in ranked:
@@ -48,10 +54,14 @@ def get_ml_recommend(cube_name, amount, root, non_json=False):
             if non_json:
                 print(card)
             else:
-                output[card] = results[rec].item()
+                output['additions'][card] = results[rec].item()
             recommended += 1
             if recommended >= amount:
                 break
+
+    for idx in cube_indices:
+        card = int_to_card[idx]
+        output['cuts'][card] = results[idx].item()
 
     if not non_json:
         return output
