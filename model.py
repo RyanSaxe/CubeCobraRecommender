@@ -2,6 +2,21 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense,Input
 from tensorflow.keras.models import Model
 
+"""
+Below is what was used for training the most recent version of the model:
+
+Optimizer: Adagrad, with default hyperparameters
+
+Loss: Binary Crossentropy + MSE(adj_mtx,decoded_for_reg)
+    - adj_mtx is the adjacency matrix created by create_mtx.py
+    and then updated such that each row sums to 1.
+    - decoded_for_reg is an output of the model
+
+Epochs: 100
+
+Batch Size: 64
+"""
+
 class Encoder(Model):
     """
     Encoder part of the model -> compress dimensionality
