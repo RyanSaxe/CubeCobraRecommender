@@ -2,7 +2,7 @@
 
 Recommender System for [CubeCobra](https://cubecobra.com/).
 
-The `web` folder contains a Flask API that will return the CubeCobraRecommeder recommendation in a json response. This is for integrating the machine learning algorithm on the website, which is currently being set up.
+The `web` folder contains a Flask API that will return the CubeCobraRecommender recommendation in a json response. This is for integrating the machine learning algorithm on the website, which is currently in development as demonstrated in this [tweet](https://twitter.com/CubeCobra1/status/1247688818607771650).
 
 Keras Model prototype is in the `model.py` file.
 
