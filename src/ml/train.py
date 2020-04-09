@@ -58,7 +58,7 @@ print('Setting Up Model . . . \n')
 
 autoencoder = CC_Recommender(num_cards)
 autoencoder.compile(
-    optimizer='adagrad',
+    optimizer='adam',
     loss=['binary_crossentropy','mean_absolute_error'],
     metrics=['accuracy'],
 )

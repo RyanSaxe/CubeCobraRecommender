@@ -21,17 +21,17 @@ class Encoder(Model):
     """
     Encoder part of the model -> compress dimensionality
     """
-    def __init__(self):
+    def __init__(self,name):
         super().__init__()
-        self.encoded_1 = Dense(512, activation='relu')
-        self.encoded_2 = Dense(256, activation='relu')
-        self.encoded_3 = Dense(128, activation='relu')
-        self.bottleneck = Dense(64, activation='relu')
+        self.encoded_1 = Dense(512, activation='relu', name=name + "_e1")
+        self.encoded_2 = Dense(256, activation='relu', name=name + "_e2")
+        self.encoded_3 = Dense(128, activation='relu', name=name + "_e3")
+        self.bottleneck = Dense(64, activation='relu', name=name + "_bottleneck")
     
     def call(self, x):
         encoded = self.encoded_1(x)
-        encoded = self.encoded_2(x)
-        encoded = self.encoded_3(x)
+        encoded = self.encoded_2(encoded)
+        encoded = self.encoded_3(encoded)
         return self.bottleneck(encoded)
     
 class Decoder(Model):
@@ -39,17 +39,17 @@ class Decoder(Model):
     Decoder part of the model -> expand from compressed latent
         space back to the input space
     """
-    def __init__(self, output_dim, output_act):
+    def __init__(self, name, output_dim, output_act):
         super().__init__()
-        self.decoded_1 = Dense(128, activation='relu')
-        self.decoded_2 = Dense(256, activation='relu')
-        self.decoded_3 = Dense(512, activation='relu')
-        self.reconstruct = Dense(output_dim, activation=output_act)
+        self.decoded_1 = Dense(128, activation='relu', name=name + "_d1")
+        self.decoded_2 = Dense(256, activation='relu', name=name + "_d2")
+        self.decoded_3 = Dense(512, activation='relu', name=name + "_d3")
+        self.reconstruct = Dense(output_dim, activation=output_act, name=name + "_reconstruction")
     
     def call(self, x):
         decoded = self.decoded_1(x)
-        decoded = self.decoded_2(x)
-        decoded = self.decoded_3(x)
+        decoded = self.decoded_2(decoded)
+        decoded = self.decoded_3(decoded)
         return self.reconstruct(decoded)
 
 class CC_Recommender(Model):
@@ -62,11 +62,11 @@ class CC_Recommender(Model):
     def __init__(self,num_cards):
         super().__init__()
         self.N = num_cards
-        self.encoder = Encoder()
+        self.encoder = Encoder("encoder")
         #sigmoid because input is a binary vector we want to reproduce
-        self.decoder = Decoder(self.N,output_act='sigmoid')
+        self.decoder = Decoder("main",self.N,output_act='sigmoid')
         #softmax because the graph information is probabilities
-        self.decoder_for_reg = Decoder(self.N,output_act='softmax')
+        self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
     
     def call(self, input):
         """
