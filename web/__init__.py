@@ -8,12 +8,12 @@ from .ml_recommend_web import get_ml_recommend
 app = Flask(__name__)
 
 if __name__ != "__main__":
-    gunicorn_error_logger = logging.getLogger('gunicorn.error')
+    gunicorn_error_logger = logging.getLogger("gunicorn.error")
     app.logger.handlers.extend(gunicorn_error_logger.handlers)
     app.logger.setLevel(logging.DEBUG)
 
 
-@app.route('/')
+@app.route("/")
 def api():
     cube_name = request.args.get("cube_name")
     num_recs = request.args.get("num_recs")
@@ -37,5 +37,5 @@ def api():
     return jsonify(results)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, threaded=True)

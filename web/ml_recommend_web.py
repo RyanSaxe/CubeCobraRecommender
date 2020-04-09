@@ -6,6 +6,7 @@ import urllib.request
 
 ROOT = "https://cubecobra.com"
 
+
 def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
     url = root + "/cube/api/cubelist/" + cube_name
 
@@ -35,19 +36,16 @@ def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
 
     model = keras.models.load_model("./ml_files/cc_rec")
 
-    def recommend(model,data):
+    def recommend(model, data):
         encoded = model.encoder(data)
         return model.decoder(encoded)
 
     cube = np.array(cube, dtype=float).reshape(1, num_cards)
-    results = recommend(model,cube)[0].numpy()
+    results = recommend(model, cube)[0].numpy()
 
     ranked = results.argsort()[::-1]
 
-    output = {
-        'additions':dict(),
-        'cuts':dict(),
-    }
+    output = {"additions": dict(), "cuts": dict()}
 
     recommended = 0
     for rec in ranked:
@@ -56,14 +54,14 @@ def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
             if non_json:
                 print(card)
             else:
-                output['additions'][card] = results[rec].item()
+                output["additions"][card] = results[rec].item()
             recommended += 1
             if recommended >= amount:
                 break
 
     for idx in cube_indices:
         card = int_to_card[idx]
-        output['cuts'][card] = results[idx].item()
+        output["cuts"][card] = results[idx].item()
 
     if not non_json:
         return output
