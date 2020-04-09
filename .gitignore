@@ -1,5 +1,5 @@
 data/
 output/
-
+.DS_Store
 venv/
 __pycache__/
