@@ -52,16 +52,23 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/recommender.h5')
+model = load_model('ml_files/cc_rec')
+
+def recommend(model,data):
+    encoded = model.encoder(data)
+    return model.decoder(encoded)
 
 print ('Generating Recommendations . . . \n')
 
 cube = np.array(cube,dtype=float).reshape(1,num_cards)
-results = model(cube)[0].numpy()
+results = recommend(model,cube)[0].numpy()
 
 ranked = results.argsort()[::-1]
 
-output = dict()
+output = {
+    'additions':dict(),
+    'cuts':dict(),
+}
 
 recommended = 0
 for rec in ranked:
@@ -70,10 +77,19 @@ for rec in ranked:
         if non_json:
             print(card)
         else:
-            output[card] = results[rec]
+            output['additions'][card] = results[rec].item()
         recommended += 1
         if recommended >= amount:
             break
 
-if not non_json:
-    print('<result>',output,'</result>')
+for idx in cube_indices:
+    card = int_to_card[idx]
+    output['cuts'][card] = results[idx].item()
+
+if non_json:
+    cards = list(output['cuts'].keys())
+    vals = list(output['cuts'].values())
+    rank_cuts = np.array(vals).argsort()
+    out = [cards[idx] for idx in rank_cuts[:amount]]
+    print('\n')
+    for item in out: print(item)
