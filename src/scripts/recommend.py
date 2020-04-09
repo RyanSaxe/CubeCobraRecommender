@@ -1,9 +1,21 @@
 import urllib.request
 import sys
-from rec_funcs import simple_recs
 import json
 import numpy as np
 import unidecode
+
+def simple_recs(cube, adj_mtx, int_to_card=None):
+    cube_contains = np.where(cube == 1)[0]
+    cube_missing = np.where(cube == 0)[0]
+    sub_adj_mtx = adj_mtx[cube_contains][:,cube_missing]
+    rec_ids = [
+        cube_missing[i] for i  in
+        sub_adj_mtx.sum(0).argsort()[::-1]
+    ]
+    if int_to_card is None:
+        return rec_ids
+    else:
+        return [int_to_card[i] for i in rec_ids]
 
 args = sys.argv[1:]
 cube_name = args[0]
@@ -26,11 +38,11 @@ card_names = mystr.split("\n")
 
 print ('Loading Adjacency Matrix . . . \n')
 
-adj_mtx = np.load('output/full_adj_mtx.npy')
+adj_mtx = np.load('././output/full_adj_mtx.npy')
 
 print ('Loading Card Name Lookup . . . \n')
 
-int_to_card = json.load(open('output/int_to_card.json','r'))
+int_to_card = json.load(open('././output/int_to_card.json','r'))
 int_to_card = {int(k):v for k,v in int_to_card.items()}
 card_to_int = {v:k for k,v in int_to_card.items()}
 
