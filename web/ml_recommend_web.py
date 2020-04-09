@@ -4,9 +4,7 @@ import unidecode
 from tensorflow import keras
 import urllib.request
 
-
 ROOT = "https://cubecobra.com"
-
 
 def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
     url = root + "/cube/api/cubelist/" + cube_name
@@ -35,10 +33,14 @@ def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
     cube = np.zeros(num_cards)
     cube[cube_indices] = 1
 
-    model = keras.models.load_model("./ml_files/recommender.h5")
+    model = keras.models.load_model("./ml_files/cc_rec")
+
+    def recommend(model,data):
+        encoded = model.encoder(data)
+        return model.decoder(encoded)
 
     cube = np.array(cube, dtype=float).reshape(1, num_cards)
-    results = model(cube)[0].numpy()
+    results = recommend(model,cube)[0].numpy()
 
     ranked = results.argsort()[::-1]
 
