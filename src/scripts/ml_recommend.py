@@ -5,7 +5,6 @@ from tensorflow.keras.models import load_model
 import sys
 import urllib.request
 
-
 args = sys.argv[1:]
 cube_name = args[0]
 non_json = True
@@ -52,7 +51,7 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/cc_rec')
+model = load_model('ml_files/cc_rec_final')
 
 def recommend(model,data):
     encoded = model.encoder(data)
@@ -92,4 +91,4 @@ if non_json:
     rank_cuts = np.array(vals).argsort()
     out = [cards[idx] for idx in rank_cuts[:amount]]
     print('\n')
-    for item in out: print(item)
+    for i,item in enumerate(out): print(item,vals[rank_cuts[i]])

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Dense,Input
+from tensorflow.keras.layers import Dense,Input,Dropout
 from tensorflow.keras.models import Model
 
 """
@@ -23,16 +23,29 @@ class Encoder(Model):
     """
     def __init__(self,name):
         super().__init__()
+        #self.input_drop = Dropout(0.2)
         self.encoded_1 = Dense(512, activation='relu', name=name + "_e1")
+        #self.e1_drop = Dropout(0.4)
         self.encoded_2 = Dense(256, activation='relu', name=name + "_e2")
+        #self.e2_drop = Dropout(0.4)
         self.encoded_3 = Dense(128, activation='relu', name=name + "_e3")
+        #self.e3_drop = Dropout(0.2)
         self.bottleneck = Dense(64, activation='relu', name=name + "_bottleneck")
     
-    def call(self, x):
+    def call(self, x, training=None):
         encoded = self.encoded_1(x)
+        #encoded = self.e1_drop(encoded)
         encoded = self.encoded_2(encoded)
+        #encoded = self.e2_drop(encoded)
         encoded = self.encoded_3(encoded)
+        #encoded = self.e3_drop(encoded)
         return self.bottleneck(encoded)
+
+    # def call_for_reg(self, x):
+    #     encoded = self.encoded_1(x)
+    #     encoded = self.encoded_2(encoded)
+    #     encoded = self.encoded_3(encoded)
+    #     return self.bottleneck(encoded)
     
 class Decoder(Model):
     """
@@ -41,16 +54,30 @@ class Decoder(Model):
     """
     def __init__(self, name, output_dim, output_act):
         super().__init__()
+        #self.bottleneck_drop = Dropout(0.2)
         self.decoded_1 = Dense(128, activation='relu', name=name + "_d1")
+        #self.d1_drop = Dropout(0.4)
         self.decoded_2 = Dense(256, activation='relu', name=name + "_d2")
+        #self.d2_drop = Dropout(0.4)
         self.decoded_3 = Dense(512, activation='relu', name=name + "_d3")
+        #self.d3_drop = Dropout(0.2)
         self.reconstruct = Dense(output_dim, activation=output_act, name=name + "_reconstruction")
     
-    def call(self, x):
+    def call(self, x, training=None):
         decoded = self.decoded_1(x)
         decoded = self.decoded_2(decoded)
         decoded = self.decoded_3(decoded)
         return self.reconstruct(decoded)
+
+    # def call_for_reg(self, x):
+    #     x = self.bottleneck_drop(x)
+    #     decoded = self.decoded_1(x)
+    #     decoded = self.d1_drop(decoded)
+    #     decoded = self.decoded_2(decoded)
+    #     decoded = self.d2_drop(decoded)
+    #     decoded = self.decoded_3(decoded)
+    #     decoded = self.d3_drop(decoded)
+    #     return self.reconstruct(decoded)
 
 class CC_Recommender(Model):
     """
@@ -66,9 +93,10 @@ class CC_Recommender(Model):
         #sigmoid because input is a binary vector we want to reproduce
         self.decoder = Decoder("main",self.N,output_act='sigmoid')
         #softmax because the graph information is probabilities
-        self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
+        self.noise = Dropout(0.20)
+        self.decoder_for_reg = Decoder("reg",self.N,output_act='sigmoid')
     
-    def call(self, input):
+    def call(self, input, training=None):
         """
         input contains two things:
             input[0] = the binary vectors representing the collections
@@ -86,6 +114,7 @@ class CC_Recommender(Model):
         represented strongly within the graph.
         """
         x,identity = input
+        x = self.noise(x)
         reconstruction = self.recommend(x)
         encode_for_reg = self.encoder(identity)
         decoded_for_reg = self.decoder_for_reg(encode_for_reg)

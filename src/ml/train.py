@@ -14,17 +14,19 @@ import random
 import sys
 
 def reset_random_seeds(seed):
-   os.environ['PYTHONHASHSEED']=str(seed)
-   tf.random.set_seed(seed)
-   np.random.seed(seed)
-   random.seed(seed)
+    #currently not used
+    os.environ['PYTHONHASHSEED']=str(seed)
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 args = sys.argv[1:]
 
 epochs = int(args[0])
 batch_size = int(args[1])
-seed = int(args[2])
-name = args[3]
+# seed = int(args[2])
+name = args[2]
+# thresh = float(args[4])
 
 map_file = '././data/maps/nameToId.json'
 folder = "././data/cube/"
@@ -39,9 +41,17 @@ cubes = utils.build_cubes(folder, num_cubes, num_cards, name_lookup, card_to_int
 
 print('Loading Adjacency Matrix . . .\n')
 
-adj_mtx = np.load('output/full_adj_mtx.npy')
+adj_mtx = np.load('././output/full_adj_mtx.npy')
 
-print('Converting Graph Weights to Probabilities . . . \n')
+#print('Converting Graph Weights to Probabilities . . . \n')
+print('Creating Graph for Regularization . . . \n')
+
+# too_small = np.where(adj_mtx < thresh)
+# good_enough = np.where(adj_mtx >= thresh)
+
+# y_mtx = adj_mtx.copy()
+# y_mtx[too_small] = 0
+# y_mtx[good_enough] = 1
 
 y_mtx = (adj_mtx/adj_mtx.sum(1)[:,None])
 y_mtx = np.nan_to_num(y_mtx,0)
