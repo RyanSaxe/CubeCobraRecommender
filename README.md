@@ -4,9 +4,25 @@ Recommender System for [CubeCobra](https://cubecobra.com/).
 
 The `web` folder contains a Flask API that will return the Machine LearningCubeCobraRecommender recommendation in a json response. This is for integrating the machine learning algorithm on the website, which is currently in development as demonstrated in this [tweet](https://twitter.com/CubeCobra1/status/1247688818607771650). The version live on CubeCobra will exist in the `prod` branch.
 
-Keras Model prototype is in the `src/ml/model.py` file.
+## Machine Learning Algorithm
 
-*More explicit documentation on how this currently works coming soon.*
+This recommender system is a Denoising AutoEncoder. There are multiple Dropout layers in the encoding step (including before the first hidden layer) to regularize the network. 
+
+The only part of the algorithm that isn't commonly seen is an additional level of regularization via a Conditional Probability Graph. This can be done with an external datasource, or the same collection datasource. But the idea is as follows:
+
+1. Take a dataset of items, and generate a matrix M such that M[i,j] is the probability that item j is in a collection given item i is in the collection.
+2. Convert this matrix into rows of probabilities (the sum of every row should equal 1)
+
+Then, use this matrix to regularize the AutoEncoder. The model is built of a couple parts:
+
+1. Normal Encoder (E) 
+2. Normal Decoder (D1)
+3. Second Decoder (D2)
+4. Input Dropout (DO,p), where p is the percent of connections to drop.
+
+Let X be our dataset, and each data point x in X be a binary vector of length |M|. And let I be a the identity matrix of the same shape as M. Then, we optimize the following loss function:
+
+Loss = BinaryCrossEntropy( X, D1(E(DO( X, 0.2 ))) ) + 0.001 * KL-Divergence( M, D2(E(I)) )
 
 ## Generating The Adjacency Matrix
 
