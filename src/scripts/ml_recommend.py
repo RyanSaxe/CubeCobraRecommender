@@ -51,7 +51,29 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/cc_rec_final')
+model = load_model('ml_files/cc_rec_kl_reg')
+
+# def encode(model,data):
+#     return model.encoder.bottleneck(
+#         model.encoder.encoded_3(
+#             model.encoder.encoded_2(
+#                 model.encoder.encoded_1(
+#                     data
+#                 )
+#             )
+#         )
+#     )
+
+# def decode(model,data):
+#     return model.decoder.reconstruct(
+#         model.decoder.decoded_3(
+#             model.decoder.decoded_2(
+#                 model.decoder.decoded_1(
+#                     data
+#                 )
+#             )
+#         )
+#     )
 
 def recommend(model,data):
     encoded = model.encoder(data)
