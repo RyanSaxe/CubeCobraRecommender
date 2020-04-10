@@ -18,10 +18,11 @@ Then, use this matrix to regularize the AutoEncoder. The model is built of a cou
 1. Normal Encoder (E) 
 2. Normal Decoder (D1)
 3. Second Decoder (D2)
+4. Input Dropout (DO) -- makes it a Denoising AutoEncoder instead of just an AutoEncoder
 
-Let D be our dataset, and each data point d in D be a binary vector of length |M|. And let I be a the identity matrix of the same shape as M. Then, we optimize the following loss function:
+Let X be our dataset, and each data point x in X be a binary vector of length |M|. And let I be a the identity matrix of the same shape as M. Then, we optimize the following loss function:
 
-Loss = BinaryCrossEntropy( D, D1(E(D)) ) + 0.001 * KL-Divergence( M, D2(E(I)) )
+Loss = BinaryCrossEntropy( D, D1(E(DO( X, 0.2 ))) ) + 0.001 * KL-Divergence( M, D2(E(I)) )
 
 ## Generating The Adjacency Matrix
 
