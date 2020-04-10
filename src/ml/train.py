@@ -47,16 +47,17 @@ adj_mtx = np.load('././output/full_adj_mtx.npy')
 print('Creating Graph for Regularization . . . \n')
 
 #make easier to learn by dropping super low conditional probabilities
-too_small = np.where(adj_mtx < thresh)
-y_mtx = adj_mtx.copy()
-y_mtx[too_small] = 0
-np.fill_diagonal(y_mtx,1)
-y_mtx = (adj_mtx/adj_mtx.sum(1)[:,None])
+# too_small = np.where(adj_mtx < thresh)
+# y_mtx = adj_mtx.copy()
+# y_mtx[too_small] = 0
+# np.fill_diagonal(y_mtx,1)
+# y_mtx = (adj_mtx/adj_mtx.sum(1)[:,None])
 # y_mtx = np.nan_to_num(y_mtx,0)
 # y_mtx[np.where(y_mtx.sum(1) == 0),np.where(y_mtx.sum(1) == 0)] = 1
 
-# y_mtx = adj_mtx.copy()
-# np.fill_diagonal(y_mtx,1)
+y_mtx = adj_mtx.copy()
+np.fill_diagonal(y_mtx,1)
+y_mtx = (adj_mtx/adj_mtx.sum(1)[:,None])
 
 print('Setting Up Data for Training . . .\n')
 
