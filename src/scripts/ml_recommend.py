@@ -51,7 +51,7 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/cc_rec_kl_reg')
+model = load_model('ml_files/less_reg')
 
 # def encode(model,data):
 #     return model.encoder.bottleneck(

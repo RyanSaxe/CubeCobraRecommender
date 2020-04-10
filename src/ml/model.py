@@ -91,7 +91,7 @@ class CC_Recommender(Model):
         #sigmoid because input is a binary vector we want to reproduce
         self.decoder = Decoder("main",self.N,output_act='sigmoid')
         #softmax because the graph information is probabilities
-        self.noise = Dropout(0.4)
+        self.noise = Dropout(0.2)
         self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
     
     def call(self, input, training=None):
