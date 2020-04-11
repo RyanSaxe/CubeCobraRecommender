@@ -25,10 +25,11 @@ class Encoder(Model):
         super().__init__()
         #self.input_drop = Dropout(0.2)
         self.encoded_1 = Dense(512, activation='relu', name=name + "_e1")
-        self.e1_drop = Dropout(0.2)
+        self.e1_drop = Dropout(0.5)
         self.encoded_2 = Dense(256, activation='relu', name=name + "_e2")
-        self.e2_drop = Dropout(0.2)
+        self.e2_drop = Dropout(0.5)
         self.encoded_3 = Dense(128, activation='relu', name=name + "_e3")
+        self.e3_drop = Dropout(0.2)
         self.bottleneck = Dense(64, activation='relu', name=name + "_bottleneck")
     
     def call(self, x, training=None):
@@ -37,6 +38,7 @@ class Encoder(Model):
         encoded = self.encoded_2(encoded)
         encoded = self.e2_drop(encoded)
         encoded = self.encoded_3(encoded)
+        encoded = self.e3_drop(encoded)
         return self.bottleneck(encoded)
 
     def call_for_reg(self, x):
@@ -91,7 +93,7 @@ class CC_Recommender(Model):
         #sigmoid because input is a binary vector we want to reproduce
         self.decoder = Decoder("main",self.N,output_act='sigmoid')
         #softmax because the graph information is probabilities
-        self.noise = Dropout(0.2)
+        self.noise = Dropout(0.5)
         self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
     
     def call(self, input, training=None):
