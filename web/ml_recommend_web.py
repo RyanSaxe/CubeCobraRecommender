@@ -34,7 +34,7 @@ def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
     cube = np.zeros(num_cards)
     cube[cube_indices] = 1
 
-    model = keras.models.load_model("./ml_files/cc_rec_kl_reg")
+    model = keras.models.load_model("./ml_files/rec_and_emb")
 
     def recommend(model, data):
         encoded = model.encoder(data)
