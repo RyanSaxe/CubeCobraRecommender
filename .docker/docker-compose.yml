@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  cubecobrarecommender:
+    build: ..
+    image: ${REPOSITORY}/cubecobrarecommender:${TAG}
+    command: bash -c "gunicorn web:app"
+    ports:
+      - "8000:8000"
