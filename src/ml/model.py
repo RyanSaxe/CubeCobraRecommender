@@ -25,20 +25,20 @@ class Encoder(Model):
         super().__init__()
         #self.input_drop = Dropout(0.2)
         self.encoded_1 = Dense(512, activation='relu', name=name + "_e1")
-        self.e1_drop = Dropout(0.5)
+        #self.e1_drop = Dropout(0.5)
         self.encoded_2 = Dense(256, activation='relu', name=name + "_e2")
-        self.e2_drop = Dropout(0.5)
+        #self.e2_drop = Dropout(0.5)
         self.encoded_3 = Dense(128, activation='relu', name=name + "_e3")
-        self.e3_drop = Dropout(0.2)
+        #self.e3_drop = Dropout(0.2)
         self.bottleneck = Dense(64, activation='relu', name=name + "_bottleneck")
     
     def call(self, x, training=None):
         encoded = self.encoded_1(x)
-        encoded = self.e1_drop(encoded)
+        #encoded = self.e1_drop(encoded)
         encoded = self.encoded_2(encoded)
-        encoded = self.e2_drop(encoded)
+        #encoded = self.e2_drop(encoded)
         encoded = self.encoded_3(encoded)
-        encoded = self.e3_drop(encoded)
+        #encoded = self.e3_drop(encoded)
         return self.bottleneck(encoded)
 
     def call_for_reg(self, x):
@@ -93,7 +93,8 @@ class CC_Recommender(Model):
         #sigmoid because input is a binary vector we want to reproduce
         self.decoder = Decoder("main",self.N,output_act='sigmoid')
         #softmax because the graph information is probabilities
-        self.noise = Dropout(0.5)
+        self.input_noise = Dropout(0.5)
+        self.latent_noise = Dropout(0.2)
         self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
     
     def call(self, input, training=None):
@@ -114,22 +115,11 @@ class CC_Recommender(Model):
         represented strongly within the graph.
         """
         x,identity = input
-        x = self.noise(x)
-        reconstruction = self.recommend(x)
-        encode_for_reg = self.encoder.call_for_reg(identity)
-        decoded_for_reg = self.decoder_for_reg(encode_for_reg)
-        return reconstruction, decoded_for_reg
-    
-    def recommend(self, x):
-        """
-        recommend function is pulled outside of `call` in order to 
-        allow calling a recommendation without passing the diagonal
-        matrix.
-
-        Note, this recommend function had not been pulled out in the first
-        iteration of this model, which is why the ml_recommend.py script
-        does not call this function
-        """
+        x = self.input_noise(x)
         encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return decoded
+        latent_for_reconstruct = self.latent_noise(encoded)
+        reconstruction = self.decoder(latent_for_reconstruct)
+        encode_for_reg = self.encoder(identity)
+        latent_for_reg = self.latent_noise(encode_for_reg)
+        decoded_for_reg = self.decoder_for_reg(latent_for_reg)
+        return reconstruction, decoded_for_reg
