@@ -83,5 +83,6 @@ autoencoder.fit(
     batch_size=batch_size,
     shuffle=True,
 )
-
-autoencoder.save('././ml_files/' + name,save_format='tf')
+dest = f'ml_files/{name}'
+os.makedirs(dest)
+autoencoder.save(dest, save_format='tf')
