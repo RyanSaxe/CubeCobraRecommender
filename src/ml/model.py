@@ -93,8 +93,8 @@ class CC_Recommender(Model):
         #sigmoid because input is a binary vector we want to reproduce
         self.decoder = Decoder("main",self.N,output_act='sigmoid')
         #softmax because the graph information is probabilities
-        self.input_noise = Dropout(0.5)
-        self.latent_noise = Dropout(0.2)
+        #self.input_noise = Dropout(0.5)
+        #self.latent_noise = Dropout(0.2)
         self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
     
     def call(self, input, training=None):
@@ -115,11 +115,11 @@ class CC_Recommender(Model):
         represented strongly within the graph.
         """
         x,identity = input
-        x = self.input_noise(x)
+        #x = self.input_noise(x)
         encoded = self.encoder(x)
-        latent_for_reconstruct = self.latent_noise(encoded)
-        reconstruction = self.decoder(latent_for_reconstruct)
+        #latent_for_reconstruct = self.latent_noise(encoded)
+        reconstruction = self.decoder(encoded)
         encode_for_reg = self.encoder(identity)
-        latent_for_reg = self.latent_noise(encode_for_reg)
-        decoded_for_reg = self.decoder_for_reg(latent_for_reg)
+        #latent_for_reg = self.latent_noise(encode_for_reg)
+        decoded_for_reg = self.decoder_for_reg(encode_for_reg)
         return reconstruction, decoded_for_reg
