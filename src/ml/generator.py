@@ -46,16 +46,12 @@ class DataGenerator(Sequence):
             len(main_indices),
         )
 
-        X = self._generate_X(
+        X,y = self.generate_data(
             main_indices,
             reg_indices,
         )
 
         if self.to_fit:
-            y = self._generate_y(
-                main_indices,
-                reg_indices,
-            )
             return [X[0],X[1]], [y[0],y[1]]
         else:
             return [X[0],X[1]]
@@ -71,21 +67,14 @@ class DataGenerator(Sequence):
         """
         self.reset_indices()
 
-    def _generate_X(self,main_indices,reg_indices):
+    def generate_data(self,main_indices,reg_indices):
         cubes = self.x_main[main_indices]
-        cut_mask,add_mask = self.add_noise(cubes)
-        cubes = cubes + cut_mask + add_mask
-        regularization = self.x_reg[reg_indices]
-        return cubes,regularization
-    
-    def _generate_y(self,main_indices,reg_indices):
-        cubes = self.x_main[main_indices]
-        regularization = self.y_reg[reg_indices]
-        return cubes,regularization
+        x_regularization = self.x_reg[reg_indices]
+        y_regularization = self.y_reg[reg_indices]
 
-    def add_noise(self,cubes):
         cut_mask = np.zeros((self.batch_size,self.N_cards))
         add_mask = np.zeros((self.batch_size,self.N_cards))
+        y_cut_mask = np.zeros((self.batch_size,self.N_cards))
         for i,cube in enumerate(cubes):
             includes = np.where(cube == 1)[0]
             excludes = np.where(cube == 0)[0]
@@ -93,6 +82,12 @@ class DataGenerator(Sequence):
             flip_amount = int(size * self.noise)
             flip_include = np.random.choice(includes, flip_amount)
             flip_exclude = np.random.choice(excludes, flip_amount)
+            y_flip_include = np.random.choice(flip_include, flip_amount//2)
             cut_mask[i,flip_include] = -1
+            y_cut_mask[i,y_flip_include] = -1
             add_mask[i,flip_exclude] = 1
-        return cut_mask, add_mask
+
+        x_cubes = cubes + cut_mask + add_mask
+        y_cubes = cubes + y_cut_mask
+
+        return [(x_cubes,x_regularization),(y_cubes,y_regularization)]
