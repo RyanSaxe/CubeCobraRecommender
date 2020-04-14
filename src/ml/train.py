@@ -11,6 +11,7 @@ from generator import DataGenerator
 import numpy as np
 import json
 import os
+import os.path
 import random
 import sys
 
@@ -28,8 +29,8 @@ batch_size = int(args[1])
 name = args[2]
 reg = float(args[3])
 
-if len(args == 5):
-    seed = int(args[2])
+if len(args) == 5:
+    seed = int(args[4])
     reset_random_seeds(seed)
 
 map_file = '././data/maps/nameToId.json'
@@ -103,5 +104,6 @@ autoencoder.fit_generator(
 #     shuffle=True,
 # )
 dest = f'ml_files/{name}'
-os.makedirs(dest)
+if not os.path.isdir(name):
+    os.makedirs(dest)
 autoencoder.save(dest, save_format='tf')
