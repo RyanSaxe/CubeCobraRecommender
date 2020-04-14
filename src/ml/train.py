@@ -109,6 +109,6 @@ autoencoder.fit_generator(
 # )
 
 dest = f'././ml_files/{name}'
-if not os.path.isdir(name):
+if not os.path.isdir(dest):
     os.makedirs(dest)
 autoencoder.save(dest, save_format='tf')
