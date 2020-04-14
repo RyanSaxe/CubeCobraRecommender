@@ -10,14 +10,12 @@ class DataGenerator(Sequence):
         batch_size=64,
         shuffle=True,
         to_fit=True,
-        pos_noise=0.2,
-        neg_noise=0.2,
+        noise=0.2,
     ):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.to_fit = to_fit
-        self.pos_noise = pos_noise
-        self.neg_noise = neg_noise
+        self.noise = noise
         #initialize inputs and outputs
         self.y_reg = adj_mtx
         self.x_reg = np.zeros_like(adj_mtx)
@@ -92,10 +90,9 @@ class DataGenerator(Sequence):
             includes = np.where(cube == 1)[0]
             excludes = np.where(cube == 0)[0]
             size = len(includes)
-            flip_include_amount = int(size * self.pos_noise)
-            flip_exclude_amount = int(size * self.neg_noise)
-            flip_include = np.random.choice(includes, flip_include_amount)
-            flip_exclude = np.random.choice(excludes, flip_exclude_amount)
+            flip_amount = int(size * self.noise)
+            flip_include = np.random.choice(includes, flip_amount)
+            flip_exclude = np.random.choice(excludes, flip_amount)
             cut_mask[i,flip_include] = -1
             add_mask[i,flip_exclude] = 1
         return cut_mask, add_mask
