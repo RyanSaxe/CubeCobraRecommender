@@ -30,9 +30,10 @@ epochs = int(args[0])
 batch_size = int(args[1])
 name = args[2]
 reg = float(args[3])
+noise = float(args[4])
 
-if len(args) == 5:
-    seed = int(args[4])
+if len(args) == 6:
+    seed = int(args[5])
     reset_random_seeds(seed)
 
 map_file = '././data/maps/nameToId.json'
@@ -89,8 +90,7 @@ generator = DataGenerator(
     y_mtx,
     cubes,
     batch_size=batch_size,
-    pos_noise=0.4,
-    neg_noise=0.2,
+    noise=noise,
 )
 
 # pdb.set_trace()
