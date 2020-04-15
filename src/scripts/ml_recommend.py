@@ -31,8 +31,8 @@ card_names = mystr.split("\n")
 
 print ('Loading Card Name Lookup . . . \n')
 
-int_to_card = json.load(open('ml_files/recommender_id_map.json','r'))
-int_to_card = {int(k):v for k,v in int_to_card.items()}
+int_to_card = json.load(open('ml_files/iko_id_map.json','r'))
+int_to_card = {int(k):v.lower() for k,v in int_to_card.items()}
 card_to_int = {v:k for k,v in int_to_card.items()}
 
 num_cards = len(int_to_card)
@@ -51,7 +51,7 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/neg')
+model = load_model('ml_files/IKO')
 
 # def encode(model,data):
 #     return model.encoder.bottleneck(
