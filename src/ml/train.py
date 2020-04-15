@@ -14,6 +14,7 @@ import os
 import os.path
 import random
 import sys
+import pdb
 
 
 def reset_random_seeds(seed):
@@ -81,8 +82,8 @@ print('Setting Up Model . . . \n')
 autoencoder = CC_Recommender(num_cards)
 autoencoder.compile(
     optimizer='adam',
-    loss=['binary_crossentropy', 'kullback_leibler_divergence'],
-    loss_weights=[1.0, reg],
+    loss=['binary_crossentropy','kullback_leibler_divergence'],
+    loss_weights=[1.0,reg],
     metrics=['accuracy'],
 )
 
@@ -95,7 +96,7 @@ generator = DataGenerator(
 
 # pdb.set_trace()
 
-autoencoder.fit_generator(
+autoencoder.fit(
     generator,
     epochs=epochs,
 )
