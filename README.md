@@ -20,10 +20,13 @@ Then, use this matrix to regularize the AutoEncoder. The model is built of a cou
 1. Normal Encoder (E) 
 2. Normal Decoder (D1)
 3. Second Decoder (D2)
+4. Function for applying noise to the input (F)
 
-:et I be a the identity matrix of the same shape as M. Then, we optimize the following loss function:
+Let I be a the identity matrix of the same shape as M. Then, we optimize the following loss function:
 
-Loss = BinaryCrossEntropy( X, D1(E( X ))) ) + 0.1 * KL-Divergence( M, D2(E(I)) )
+Loss = BinaryCrossEntropy( X, D1(E(F( X ))) ) + 0.1 * KL-Divergence( M, D2(E(I)) )
+
+Note that 0.1 is the hyperparameter regularization coefficient. 
 
 ## Generating The Adjacency Matrix
 
