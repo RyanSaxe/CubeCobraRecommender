@@ -14,7 +14,7 @@ args = sys.argv[1:]
 
 if len(args) != 0:
     print('Using Ikoria Data')
-    cubes = np.load('././output/cubes.npy')
+    cubes = np.load('././ml_files/cubes.npy')
     fname = '././output/iko_adj_mtx.npy'
 else:
     map_file = '././data/maps/nameToId.json'

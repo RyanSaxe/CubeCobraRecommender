@@ -7,13 +7,16 @@ import urllib.request
 
 args = sys.argv[1:]
 cube_name = args[0]
+model_name = 'IKO'
 non_json = True
 root = "https://cubecobra.com"
 if len(args) > 1:
     amount = int(args[1])
     if len(args) > 2:
-        root = args[2]
-        non_json = False
+        model_name = args[2]
+        if len(args) > 3:
+            root = args[3]
+            non_json = False
 else:
     amount = 100
 
@@ -51,7 +54,7 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/IKO')
+model = load_model(f'ml_files/{model_name}')
 
 # def encode(model,data):
 #     return model.encoder.bottleneck(
