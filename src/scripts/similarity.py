@@ -14,7 +14,7 @@ card_to_int = {v:k for k,v in int_to_card.items()}
 
 num_cards = len(int_to_card)
 
-model = load_model('ml_files/cc_rec_1000_2')
+model = load_model('ml_files/high_req')
 
 cards = np.zeros((num_cards,num_cards))
 np.fill_diagonal(cards,1)

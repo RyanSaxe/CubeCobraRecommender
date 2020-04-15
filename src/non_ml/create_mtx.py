@@ -1,4 +1,5 @@
 import os
+import os.path
 
 import utils
 import numpy as np
@@ -17,7 +18,9 @@ cubes = utils.build_cubes(folder, num_cubes, num_cards, name_lookup,
 print('creating matrix')
 adj_mtx = utils.create_adjacency_matrix(cubes)
 
-os.makedirs('././output')
+dest = '././output'
+if not os.path.isdir(dest):
+    os.makedirs('././output')
 
 with open('././output/full_adj_mtx.npy', 'wb') as out_mtx:
     np.save(out_mtx, adj_mtx)
