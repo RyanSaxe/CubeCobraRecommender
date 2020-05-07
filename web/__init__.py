@@ -37,7 +37,7 @@ def api():
         raise e
     return jsonify(results)
 
-@app.route("/embeddings/")
+@app.route("/embeddings/",methods=['POST'])
 def embeddings():
     cards = request.json.get("cards")
     n_decimals = request.args.get("n_decimals", 5)
