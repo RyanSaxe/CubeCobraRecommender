@@ -11,7 +11,7 @@ def get_ml_embeddings(cards, n_decimals=5):
 
     num_cards = len(int_to_card)
 
-    model = load_model('ml_files/recommender')
+    model = keras.models.load_model('ml_files/recommender')
 
     card_mtx = np.zeros((len(cards),num_cards))
 
@@ -19,7 +19,7 @@ def get_ml_embeddings(cards, n_decimals=5):
         idx = card_to_int[card]
         card_mtx[i,idx] = 1
     
-    embeddings = model.encoder(cards).numpy()
+    embeddings = model.encoder(card_mtx).numpy()
     rounded_embs = np.round(embeddings,n_decimals)
-    return rounded_embs
+    return rounded_embs.tolist()
 
