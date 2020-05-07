@@ -3,6 +3,7 @@ import logging
 from flask import Flask, request, jsonify
 
 from .ml_recommend_web import get_ml_recommend
+from .ml_embeddings_web import get_ml_embeddings
 
 
 app = Flask(__name__)
@@ -36,6 +37,12 @@ def api():
         raise e
     return jsonify(results)
 
+@app.route("/embeddings/")
+def embeddings():
+    cards = request.json.get("cards")
+    n_decimals = request.args.get("n_decimals", 5)
+    results = get_ml_embeddings(cards, n_decimals=n_decimals)
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, threaded=True)
