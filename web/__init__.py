@@ -2,8 +2,8 @@ import logging
 
 from flask import Flask, request, jsonify
 
-from .ml_recommend_web import get_ml_recommend
-from .ml_embeddings_web import get_ml_embeddings
+from ml_recommend_web import get_ml_recommend
+from ml_embeddings_web import get_ml_embeddings
 
 
 app = Flask(__name__)
