@@ -2,7 +2,7 @@ FROM python:3.7
 
 RUN mkdir -p /recommender
 WORKDIR /recommender
-COPY ml_files/cc_rec_1000_2 ml_files/cc_rec_1000_2
+COPY ml_files/ ml_files/
 
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
