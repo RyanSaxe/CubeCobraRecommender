@@ -5,7 +5,7 @@ import json
 map_file = '././data/maps/nameToId.json'
 folder = "././data/cube/"
 print('getting data')
-num_cards,name_lookup,card_to_int,int_to_card = utils.get_card_maps(map_file)
+num_cards, name_lookup, card_to_int, int_to_card = utils.get_card_maps(map_file)
 
 num_cubes = utils.get_num_cubes(folder)
 
