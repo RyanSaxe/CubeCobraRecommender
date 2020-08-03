@@ -16,6 +16,7 @@ print(f'num cubes: {num_cubes}')
 
 cubes = utils.build_decks(folder, num_cubes, num_cards,
                           name_lookup, card_to_int, require_side=require_side)
+
 print('creating matrix')
 adj_mtx = utils.create_adjacency_matrix(cubes)
 

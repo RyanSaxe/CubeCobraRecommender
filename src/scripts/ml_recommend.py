@@ -51,7 +51,7 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/recommender')
+model = load_model('ml_files/neg')
 
 # def encode(model,data):
 #     return model.encoder.bottleneck(
@@ -76,8 +76,8 @@ model = load_model('ml_files/recommender')
 #     )
 
 def recommend(model,data):
-    encoded = model.encoder(data)
-    return model.decoder(encoded)
+    encoded = model.encoder(data,training=False)
+    return model.decoder(encoded,training=False)
 
 print ('Generating Recommendations . . . \n')
 
