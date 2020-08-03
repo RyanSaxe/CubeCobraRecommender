@@ -65,6 +65,26 @@ def get_num_cubes(cube_folder, require_side=False):
 
 
 def build_cubes(cube_folder, num_cubes, num_cards,
+                name_lookup, card_to_int):
+    cubes = np.zeros((num_cubes, num_cards))
+    counter = 0
+    for f in os.listdir(cube_folder):
+        full_path = os.path.join(cube_folder, f)
+        with open(full_path, 'rb') as fp:
+            contents = json.load(fp)
+        for cube in contents:
+            card_ids = []
+            for card_name in cube:
+                if card_name is not None:
+                    card_id = card_to_int.get(card_name)
+                    if card_id is not None:
+                        card_ids.append(card_id)
+            cubes[counter, card_ids] = 1
+            counter += 1
+    return cubes
+
+
+def build_decks(cube_folder, num_cubes, num_cards,
                 name_lookup, card_to_int, require_side=False):
     cubes = np.zeros((num_cubes, num_cards))
     counter = 0
@@ -81,7 +101,10 @@ def build_cubes(cube_folder, num_cubes, num_cards,
                     card_id = card_to_int.get(card_name)
                     if card_id is not None:
                         card_ids.append(card_id)
-            cubes[counter, card_ids] = 1
+            weight = 1
+            if len(cube['side']) == 0:
+                weight = 0.5
+            cubes[counter, card_ids] = weight
             counter += 1
     return cubes
 
@@ -93,7 +116,7 @@ def create_adjacency_matrix(cubes, verbose=True, force_diag=None):
         if verbose:
             if i % 100 == 0:
                 print(i+1, "/", num_cards)
-        idxs = np.where(cubes[:, i] == 1)
+        idxs = np.where(cubes[:, i] > 0)
         cubes_w_cards = cubes[idxs]
         step1 = cubes_w_cards.sum(0)
         if step1[i] != 0:
