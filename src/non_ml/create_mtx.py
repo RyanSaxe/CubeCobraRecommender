@@ -2,21 +2,42 @@ import utils
 import numpy as np
 import json
 from pathlib import Path
+import os
 
 map_file = '././data/maps/nameToId.json'
-folder = "././data/deck/"
+folder = "././data/decks/"
 require_side = False
 print('getting data')
-num_cards, name_lookup, card_to_int, int_to_card = \
-    utils.get_card_maps(map_file)
+num_cards = 0
+num_decks = 0
+card_to_int = dict()
+for f in os.listdir(folder):
+    full_path = os.path.join(folder, f)
+    with open(full_path, 'rb') as fp:
+        contents = json.load(fp)
+    for cube in contents:
+        card_ids = []
+        if require_side and len(cube['side']) == 0:
+            continue
+        num_decks += 1
+        for card_name in cube['main']:
+            if card_name is not None:
+                if card_name not in card_to_int:
+                    card_to_int[card_name] = num_cards
+                    num_cards += 1
+print(f'num decks: {num_decks}')
 
-num_cubes = utils.get_num_cubes(folder, require_side=require_side)
+int_to_card = {v:k for k,v in card_to_int.items()}
 
-print(f'num cubes: {num_cubes}')
+cubes = utils.build_decks(folder, num_decks, num_cards,
+                          card_to_int, require_side=require_side)
 
+<<<<<<< HEAD
+=======
 cubes = utils.build_decks(folder, num_cubes, num_cards,
                           name_lookup, card_to_int, require_side=require_side)
 
+>>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
 print('creating matrix')
 adj_mtx = utils.create_adjacency_matrix(cubes)
 

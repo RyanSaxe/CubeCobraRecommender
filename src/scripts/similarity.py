@@ -8,7 +8,7 @@ args = sys.argv[1:]
 name = args[0].replace('_',' ')
 N = int(args[1])
 
-int_to_card = json.load(open('ml_files/recommender_id_map.json','r'))
+int_to_card = json.load(open('ml_files/recommender_id_map.json','rb'))
 int_to_card = {int(k):v for k,v in int_to_card.items()}
 card_to_int = {v:k for k,v in int_to_card.items()}
 

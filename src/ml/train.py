@@ -15,7 +15,11 @@ import tensorflow as tf
 from generator import DataGenerator
 from model import CC_Recommender
 from non_ml import utils
+<<<<<<< HEAD
+import json
+=======
 
+>>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
 
 def reset_random_seeds(seed):
     # currently not used
@@ -38,15 +42,26 @@ if len(args) == 6:
     reset_random_seeds(seed)
 
 map_file = '././data/maps/nameToId.json'
-folder = "././data/cube/"
+folder = "././data/cubes/"
 
 print('Loading Cube Data . . .\n')
 
+<<<<<<< HEAD
+int_to_card = json.load(open('././output/int_to_card.json','rb'))
+int_to_card = {int(k):v for k,v in int_to_card.items()}
+card_to_int = {v:k for k,v in int_to_card.items()}
+=======
 num_cards, name_lookup, card_to_int, _ = utils.get_card_maps(map_file)
+>>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
 
 num_cubes = utils.get_num_cubes(folder)
+num_cards = len(int_to_card)
 
+<<<<<<< HEAD
+cubes = utils.build_cubes(folder, num_cubes, num_cards,
+=======
 cubes = utils.build_cubes(folder, num_cubes, num_cards, name_lookup,
+>>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
                           card_to_int)
 
 print('Loading Adjacency Matrix . . .\n')
@@ -65,8 +80,13 @@ print('Creating Graph for Regularization . . . \n')
 # y_mtx = np.nan_to_num(y_mtx,0)
 # y_mtx[np.where(y_mtx.sum(1) == 0),np.where(y_mtx.sum(1) == 0)] = 1
 
+<<<<<<< HEAD
+# y_mtx = adj_mtx.copy()
+# np.fill_diagonal(y_mtx, 1)
+=======
 y_mtx = adj_mtx.copy()
 np.fill_diagonal(y_mtx, 1)
+>>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
 y_mtx = (adj_mtx/adj_mtx.sum(1)[:, None])
 
 print('Setting Up Data for Training . . .\n')
