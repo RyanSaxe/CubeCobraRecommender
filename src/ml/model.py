@@ -114,12 +114,13 @@ class CC_Recommender(Model):
         embedded in the recommendations. As the individual items must pull towards items
         represented strongly within the graph.
         """
-        x,identity = input
-        #x = self.input_noise(x)
+        x, identity = input
+        # x = self.input_noise(x)
         encoded = self.encoder(x)
-        #latent_for_reconstruct = self.latent_noise(encoded)
+        # latent_for_reconstruct = self.latent_noise(encoded)
         reconstruction = self.decoder(encoded)
         encode_for_reg = self.encoder(identity)
-        #latent_for_reg = self.latent_noise(encode_for_reg)
+        # latent_for_reg = self.latent_noise(encode_for_reg)
         decoded_for_reg = self.decoder_for_reg(encode_for_reg)
+        # tf.summary.histogram('outputs/reconstruction', reconstruction)
         return reconstruction, decoded_for_reg

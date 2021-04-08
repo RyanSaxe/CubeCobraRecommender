@@ -2,22 +2,23 @@ import json
 import os
 import numpy as np
 
+BAD_NAMES = [
+    'plains',
+    'island',
+    'swamp',
+    'mountain',
+    'forest',
+    '1996 world champion',
+    'invalid card',
+]
+BAD_FUNCTIONS = [
+    lambda x: x.get('isToken'),
+]
+
 
 def exclude(card_file=None):
     if card_file is None:
         return []
-    BAD_NAMES = [
-        'plains',
-        'island',
-        'swamp',
-        'mountain',
-        'forest',
-        '1996 world champion',
-        'invalid card',
-    ]
-    BAD_FUNCTIONS = [
-        lambda x: x.get('isToken'),
-    ]
     with open(card_file, 'rb') as cf:
         card_dict = json.load(cf)
     for cd in card_dict.values():
@@ -34,7 +35,6 @@ def get_card_maps(map_file, exclude_file=None):
         names = json.load(mf)
     name_lookup = dict()
     card_to_int = dict()
-    int_to_card = dict()
     num_cards = 0
     for name, ids in names.items():
         if name in exclusions:
@@ -51,88 +51,72 @@ def get_card_maps(map_file, exclude_file=None):
         int_to_card
     )
 
-
-def get_num_cubes(cube_folder, require_side=False):
-    num_cubes = 0
-    for f in os.listdir(cube_folder):
-        full_path = os.path.join(cube_folder, f)
-        with open(full_path, 'rb') as fp:
-            contents = json.load(fp)
-        if require_side:
-            num_cubes += len([x for x in contents if len(x['side']) > 0])
-        else:
-            num_cubes += len(contents)
-    return num_cubes
+def get_num_objs(cube_folder, validation_func=lambda _: True):
+    num_objs = 0
+    for filename in cube_folder.iterdir():
+        with open(filename, 'rb') as obj_file:
+            contents = json.load(obj_file)
+        num_objs += len([obj for obj in contents if validation_func(obj)])
+    return num_objs
 
 
-def build_cubes(cube_folder, num_cubes, num_cards,
-<<<<<<< HEAD
-                card_to_int):
-=======
-                name_lookup, card_to_int):
->>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
+def build_cubes(cube_folder, num_cubes, num_cards, card_to_int,
+                validation_func=lambda _: True):
     cubes = np.zeros((num_cubes, num_cards))
     counter = 0
-    for f in os.listdir(cube_folder):
-        full_path = os.path.join(cube_folder, f)
-        with open(full_path, 'rb') as fp:
-            contents = json.load(fp)
+    for filename in cube_folder.iterdir():
+        with open(filename, 'rb') as cube_file:
+            contents = json.load(cube_file)
         for cube in contents:
-            card_ids = []
-            for card_name in cube:
-                if card_name is not None:
-                    card_id = card_to_int.get(card_name)
-                    if card_id is not None:
-                        card_ids.append(card_id)
-            cubes[counter, card_ids] = 1
-            counter += 1
+            if validation_func(cube):
+                card_ids = []
+                for card_name in cube['cards']:
+                    if card_name is not None:
+                        card_id = card_to_int.get(card_name, None)
+                        if card_id is not None:
+                            card_ids.append(card_id)
+                cubes[counter, card_ids] = 1
+                counter += 1
     return cubes
 
 
-def build_decks(cube_folder, num_cubes, num_cards,
-<<<<<<< HEAD
-            card_to_int, require_side=False):
-=======
-                name_lookup, card_to_int, require_side=False):
->>>>>>> 514d3b46b0b628911b2c7574bab516fa0b835287
-    cubes = np.zeros((num_cubes, num_cards))
+def build_decks(cube_folder, num_decks, num_cards,
+                card_to_int, validation_func=lambda _: True,
+                soft_validation=0):
+    decks = np.zeros((num_decks, num_cards), dtype=np.uint8)
     counter = 0
-    for f in os.listdir(cube_folder):
-        full_path = os.path.join(cube_folder, f)
-        with open(full_path, 'rb') as fp:
-            contents = json.load(fp)
-        for cube in contents:
-            card_ids = []
-            if require_side and len(cube['side']) == 0:
-                continue
-            for card_name in cube['main']:
-                if card_name is not None:
-                    card_id = card_to_int.get(card_name)
-                    if card_id is not None:
-                        card_ids.append(card_id)
-            weight = 1
-            if len(cube['side']) == 0:
-                weight = 0.5
-            cubes[counter, card_ids] = weight
-            counter += 1
-    return cubes
+    for filename in cube_folder.iterdir():
+        with open(filename, 'rb') as deck_file:
+            contents = json.load(deck_file)
+        for deck in contents:
+            if soft_validation > 0 or validation_func(deck):
+                card_ids = []
+                for card_name in deck['main']:
+                    if card_name is not None:
+                        card_id = card_to_int.get(card_name, None)
+                        if card_id is not None:
+                            card_ids.append(card_id)
+                weight = 1
+                if not validation_func(deck):
+                    weight = soft_validation
+                decks[counter, card_ids] = weight
+                counter += 1
+    return decks
 
 
-def create_adjacency_matrix(cubes, verbose=True, force_diag=None):
-    num_cards = cubes.shape[1]
+def create_adjacency_matrix(decks, verbose=True, force_diag=None):
+    num_cards = decks.shape[1]
     adj_mtx = np.empty((num_cards, num_cards))
     for i in range(num_cards):
         if verbose:
             if i % 100 == 0:
                 print(i+1, "/", num_cards)
-        idxs = np.where(cubes[:, i] > 0)
-        cubes_w_cards = cubes[idxs]
-        step1 = cubes_w_cards.sum(0)
+        idxs = np.where(decks[:, i] > 0)
+        decks_w_cards = np.float64(decks[idxs])
+        step1 = decks_w_cards.sum(0)  # (num_cards,)
         if step1[i] != 0:
-            step2 = step1/step1[i]
-        else:
-            step2 = step1
-        adj_mtx[i] = step2
+            step1 = step1/step1[i]
+        adj_mtx[i] = step1
     if force_diag is not None:
         np.fill_diagonal(adj_mtx, force_diag)
     return adj_mtx

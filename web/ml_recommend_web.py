@@ -6,8 +6,7 @@ import urllib.request
 
 ROOT = "https://cubecobra.com"
 
-
-def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
+def get_ml_recommend(model, int_to_card, card_to_int, cube_name, amount, root=ROOT, non_json=False):
     url = root + "/cube/api/cubelist/" + cube_name
 
     fp = urllib.request.urlopen(url)
@@ -18,23 +17,17 @@ def get_ml_recommend(cube_name, amount, root=ROOT, non_json=False):
 
     card_names = mystr.split("\n")
 
-    int_to_card = json.load(open("./ml_files/recommender_id_map.json", "r"))
-    int_to_card = {int(k): v for k, v in int_to_card.items()}
-    card_to_int = {v: k for k, v in int_to_card.items()}
-
     num_cards = len(int_to_card)
 
     cube_indices = []
     for name in card_names:
-        idx = card_to_int.get(unidecode.unidecode(name.lower()))
+        idx = card_to_int.get(unidecode.unidecode(name.lower()), None)
         # skip unknown cards (e.g. custom cards)
         if idx is not None:
             cube_indices.append(idx)
 
     cube = np.zeros(num_cards)
     cube[cube_indices] = 1
-
-    model = keras.models.load_model("./ml_files/recommender")
 
     def recommend(model, data):
         encoded = model.encoder(data)

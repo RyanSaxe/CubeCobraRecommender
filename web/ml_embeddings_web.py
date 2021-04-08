@@ -3,14 +3,7 @@ import numpy as np
 import unidecode
 from tensorflow import keras
 
-int_to_card = json.load(open("./ml_files/recommender_id_map.json", "r"))
-int_to_card = {int(k): v for k, v in int_to_card.items()}
-card_to_int = {v: k for k, v in int_to_card.items()}
-
-model = keras.models.load_model('ml_files/recommender')
-
-
-def get_ml_embeddings(cards, n_decimals=5):
+def get_ml_embeddings(model, int_to_card, card_to_int, cards, n_decimals=5):
 
     num_cards = len(int_to_card)
 

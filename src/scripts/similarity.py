@@ -8,13 +8,13 @@ args = sys.argv[1:]
 name = args[0].replace('_',' ')
 N = int(args[1])
 
-int_to_card = json.load(open('ml_files/recommender_id_map.json','rb'))
-int_to_card = {int(k):v for k,v in int_to_card.items()}
+int_to_card = json.load(open('data/maps/int_to_card.json','rb'))
+int_to_card = {int(k):v for k,v in enumerate(int_to_card)}
 card_to_int = {v:k for k,v in int_to_card.items()}
 
 num_cards = len(int_to_card)
 
-model = load_model('ml_files/high_req')
+model = load_model('ml_files/20210407')
 
 cards = np.zeros((num_cards,num_cards))
 np.fill_diagonal(cards,1)

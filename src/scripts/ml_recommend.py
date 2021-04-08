@@ -21,18 +21,17 @@ print('Getting Cube List . . . \n')
 
 url = root + "/cube/api/cubelist/" + cube_name
 
-fp = urllib.request.urlopen(url)
-mybytes = fp.read()
-
+with urllib.request.urlopen(url) as request:
+    mybytes = request.read()
 mystr = mybytes.decode("utf8")
-fp.close()
 
 card_names = mystr.split("\n")
 
 print ('Loading Card Name Lookup . . . \n')
 
-int_to_card = json.load(open('ml_files/recommender_id_map.json','rb'))
-int_to_card = {int(k):v for k,v in int_to_card.items()}
+with open('data/maps/int_to_card.json', 'rb') as map_file:
+    int_to_card = json.load(map_file)
+int_to_card = {int(k):v for k,v in enumerate(int_to_card)}
 card_to_int = {v:k for k,v in int_to_card.items()}
 
 num_cards = len(int_to_card)
@@ -51,7 +50,7 @@ cube[cube_indices] = 1
 
 print('Loading Model . . . \n')
 
-model = load_model('ml_files/neg')
+model = load_model('ml_files/20210407')
 
 # def encode(model,data):
 #     return model.encoder.bottleneck(
@@ -81,8 +80,8 @@ def recommend(model,data):
 
 print ('Generating Recommendations . . . \n')
 
-cube = np.array(cube,dtype=float).reshape(1,num_cards)
-results = recommend(model,cube)[0].numpy()
+cube = np.array(cube, dtype=float).reshape(1, num_cards)
+results = recommend(model, cube)[0].numpy()
 
 ranked = results.argsort()[::-1]
 
@@ -92,11 +91,11 @@ output = {
 }
 
 recommended = 0
-for rec in ranked:
+for i, rec in enumerate(ranked):
     if cube[0][rec] != 1:
         card = int_to_card[rec]
         if non_json:
-            print(card)
+            print(card, results[card_to_int[card]])
         else:
             output['additions'][card] = results[rec].item()
         recommended += 1
