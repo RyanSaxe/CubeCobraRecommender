@@ -50,7 +50,6 @@ if __name__ == '__main__':
     def load_neg_sampler():
         print('Loading Adjacency Matrix . . .\n')
         adj_mtx = np.load('data/adj_mtx.npy')
-        adj_mtx[list(range(len(adj_mtx))), list(range(len(adj_mtx)))] = 0
         neg_sampler = adj_mtx.sum(0) / adj_mtx.sum()
         return neg_sampler
 
@@ -66,11 +65,12 @@ if __name__ == '__main__':
         print('Loading Cube Data')
         cubes = utils.build_cubes(cube_folder, num_cubes, num_cards, card_to_int,
                                   validation_func=is_valid_cube)
-        return cubes
+        cube_includes = [np.where(cube == 1)[0] for cube in cubes]
+        cube_excludes = [np.where(cube == 0)[0] for cube in cubes]
+        return cube_includes, cube_excludes
 
+    cube_includes, cube_excludes = load_cubes()
     neg_sampler = load_neg_sampler()
-    cube_includes = [np.where(cube == 1)[0] for cube in load_cubes()]
-    cube_excludes = [np.where(cube == 0)[0] for cube in load_cubes()]
     neg_sampler_exclude = [neg_sampler[excludes] / neg_sampler[excludes].sum() for excludes in cube_excludes]
     task_queue = multiprocessing.Queue()
     batch_queue = multiprocessing.Queue()
@@ -81,7 +81,8 @@ if __name__ == '__main__':
     print(f'Creating a pool with {args.num_workers} different workers.')
 
     with create_sequence(
-        load_cubes,
+        num_cubes,
+        num_cards,
         batch_size=args.batch_size,
         noise=args.noise,
         noise_std=args.noise_stddev,
@@ -176,5 +177,5 @@ if __name__ == '__main__':
             epochs=args.epochs,
             callbacks=callbacks,
         )
-
+        print('Saving final model')
         autoencoder.save(output, save_format='tf')

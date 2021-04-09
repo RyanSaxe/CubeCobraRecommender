@@ -9,7 +9,7 @@ import numpy as np
 def load_adj_mtx():
     print('Loading Adjacency Matrix . . .\n')
     adj_mtx = np.load('data/adj_mtx.npy')
-    adj_mtx[list(range(len(adj_mtx))), list(range(len(adj_mtx)))] = 0
+    np.fill_diagonal(adj_mtx, 1)
     return adj_mtx
 
 def gen_worker(task_queue, done_queue, neg_sampler_excludes, cube_includes, cube_excludes, neg_sampler):
@@ -17,9 +17,6 @@ def gen_worker(task_queue, done_queue, neg_sampler_excludes, cube_includes, cube
         done_queue.put(generate_data(*args, neg_sampler_excludes, cube_includes, cube_excludes, neg_sampler))
 
 def generate_data(top_level_indices, to_fit, noise, noise_std, neg_samplers, cube_includes, cube_excludes, neg_sampler):
-    # cut_mask = [[], []]
-    # add_mask = [[], []]
-    # y_cut_mask = [[], []]
     cut_mask = []
     add_mask = []
     y_cut_mask = []
@@ -33,33 +30,28 @@ def generate_data(top_level_indices, to_fit, noise, noise_std, neg_samplers, cub
         noise = np.clip(
             np.random.normal(noise, noise_std),
             a_min=0.05,
-            a_max=0.90,
+            a_max=0.95,
         )
         flip_amount = min(int(size * noise), size - 1)
-        to_exclude = np.random.choice(includes, flip_amount, replace=True)
+        to_exclude = np.random.choice(includes, flip_amount, replace=False)
         if len(excludes) < flip_amount:
             to_include = excludes
         else:
             neg_sampler_exclude = neg_samplers[cube_index]
             to_include = np.random.choice(excludes, flip_amount, p=neg_sampler_exclude, replace=False)
-        y_to_exclude = np.random.choice(to_exclude, flip_amount // 4, replace=True)
+            to_include = list(set(to_include))
+        y_to_exclude = np.random.choice(to_exclude, flip_amount // 4, replace=False)
 
-        # cut_mask[0] += [i for _ in to_exclude]
-        # cut_mask[1] += [j for j in to_exclude]
-        # y_cut_mask[0] += [i for _ in y_to_exclude]
-        # y_cut_mask[1] += [j for j in y_to_exclude]
-        # add_mask[0] += [i for _ in to_include]
-        # add_mask[1] += [j for j in to_include]
         cube_indices.append(includes)
         cut_mask.append(to_exclude)
         y_cut_mask.append(y_to_exclude)
         add_mask.append(to_include)
     if to_fit:
         reg_indices = np.random.choice(
-            np.arange(len(neg_sampler)),
+            len(neg_sampler),
             len(top_level_indices),
             p=neg_sampler,
-            replace=True,
+            replace=False,
         )
         return (cube_indices, cut_mask, y_cut_mask, add_mask), reg_indices
     else:
@@ -70,7 +62,8 @@ def create_sequence(*args, **kwargs):
     class DataGenerator(Sequence):
         def __init__(
             self,
-            load_cubes,
+            num_cubes,
+            num_cards,
             task_queue,
             batch_queue,
             processes,
@@ -87,13 +80,9 @@ def create_sequence(*args, **kwargs):
             self.shuffle = shuffle
             self.to_fit = to_fit
             self.noise = noise
-            cubes = load_cubes()
-            # Initialize inputs and outputs
-            cubes_shape = cubes.shape
-            self.N_cubes, self.N_cards = cubes_shape
-            self.x_main = cubes
+            self.N_cubes = num_cubes
+            self.N_cards = num_cards
             adj_mtx = load_adj_mtx()
-            neg_sampler = adj_mtx.sum(0) / adj_mtx.sum()
             self.y_reg = (adj_mtx/adj_mtx.sum(1)[:, None])
             # Initialize other needed inputs
             self.indices = np.arange(self.N_cubes)
@@ -101,14 +90,13 @@ def create_sequence(*args, **kwargs):
             self.reset_indices()
 
         def __enter__(self):
-            # for process in self.processes:
-            #     process.start()
             return self
 
         def __exit__(self, exc_type, exc_val, exc_tb):
             print('Exiting the generator')
             for _ in self.processes:
                 self.task_queue.put('STOP')
+            time.sleep(1)
             for process in self.processes:
                 process.terminate()
             return False
@@ -117,7 +105,6 @@ def create_sequence(*args, **kwargs):
             """
             return: number of batches per epoch
             """
-            self.on_epoch_end()
             return self.N_cubes // self.batch_size
 
         def __getitem__(self, batch_number):
@@ -126,22 +113,18 @@ def create_sequence(*args, **kwargs):
             param batch_number: which batch to generate
             return: X and y when fitting. X only when predicting
             """
-            if self.task_queue.empty() and self.batch_queue.qsize() < self.batch_size:
+            if self.task_queue.empty() and self.batch_queue.qsize() < len(self):
                  self.reset_indices()
-            try:
-                batched_data, reg_indices = self.batch_queue.get(True, 5)
-            except Exception as e:
-                print(e)
-                raise
+            batched_data, reg_indices = self.batch_queue.get(True, 5)
             cube_x = np.zeros((self.batch_size, self.N_cards))
             cube_y = np.zeros((self.batch_size, self.N_cards))
             for i, data in enumerate(zip(*batched_data)):
                 includes, cut_mask, y_cut_mask, add_mask = data
                 cube_x[i, includes] = 1
-                cube_x[i, cut_mask] -= 1
-                cube_x[i, add_mask] += 1
+                cube_x[i, cut_mask] = 0
+                cube_x[i, add_mask] = 1
                 cube_y[i, includes] = 1
-                cube_y[i, y_cut_mask] -= 1
+                cube_y[i, y_cut_mask] = 0
             bad_indices_x = np.where((cube_x != 0) & (cube_x != 1))
             bad_indices_y = np.where((cube_y != 0) & (cube_y != 1))
             if len(bad_indices_x[0]) > 0:
@@ -170,7 +153,7 @@ def create_sequence(*args, **kwargs):
             """
             Update indices after each epoch
             """
-            self.reset_indices()
+            # self.reset_indices()
     return DataGenerator(*args, **kwargs)
 
 

@@ -28,7 +28,7 @@ with urllib.request.urlopen(url) as request:
 mystr = mybytes.decode("utf8")
 
 card_names = mystr.split("\n")
-model_dir = Path('ml_files/20210408/model')
+model_dir = Path('ml_files/20210409')
 
 print ('Loading Card Name Lookup . . . \n')
 
