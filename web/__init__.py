@@ -48,7 +48,7 @@ def embeddings():
     return jsonify(results)
 
 if __name__ == "__main__":
-    model_path = Path('ml_files/20210407')
+    model_path = Path('ml_files/20210409')
     with open(model_path / 'int_to_card.json', 'rb') as map_file:
         int_to_card = json.load(map_file)
     int_to_card = {int(k): v for k, v in enumerate(int_to_card)}
