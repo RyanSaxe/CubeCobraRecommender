@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--regularization', '--reg', '-r', type=float, help='The relative weight of regularization vs reproducing the cube.')
     parser.add_argument('--noise', type=float, help='The mean number of random swaps to make per cube.')
     parser.add_argument('--noise-stddev', type=float, default=0.1, help="The standard deviation of the amount of noise to apply.")
-    parser.add_argument('--learning-rate', type=float, help="The initial learning rate.")
+    # parser.add_argument('--learning-rate', type=float, help="The initial learning rate.")
     parser.add_argument('--seed', type=int, default=None, help="A random seed to provide reproducible runs.")
     parser.add_argument('--xla', action='store_true', help='Use the XLA optimizer on the model.')
     parser.add_argument('--profile', action='store_true', help='Run profiling on part of the second batch to analyze performance.')
@@ -132,12 +132,12 @@ if __name__ == '__main__':
         checkpoint_dir = output / 'model'
         autoencoder = CC_Recommender(num_cards)
         latest = tf.train.latest_checkpoint(str(output))
-        print(latest)
         if latest is not None:
             print('Loading Checkpoint. Saved values are:')
             autoencoder.load_weights(latest)
         autoencoder.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=args.learning_rate),
+            # optimizer=tf.keras.optimizers.Adam(learning_rate=args.learning_rate),
+            optimizer='adam',
             loss=['binary_crossentropy', 'kullback_leibler_divergence'],
             loss_weights=[1.0, args.regularization],
             metrics=[('accuracy', tf.keras.metrics.Recall(), tf.keras.metrics.Precision()), ('accuracy',)],
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         mcp_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_dir,
             monitor='loss',
-            verbose=True,
+            verbose=False,
             save_best_only=False,
             mode='min',
             save_freq='epoch')
@@ -170,6 +170,7 @@ if __name__ == '__main__':
         callbacks.append(lr_callback)
         # callbacks.append(es_callback)
 
+        print('Starting training')
         autoencoder.fit(
             generator,
             epochs=args.epochs,

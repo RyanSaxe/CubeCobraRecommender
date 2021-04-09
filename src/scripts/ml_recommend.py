@@ -1,9 +1,11 @@
 import json
+import sys
+import urllib.request
+from pathlib import Path
+
 import numpy as np
 import unidecode
 from tensorflow.keras.models import load_model
-import sys
-import urllib.request
 
 args = sys.argv[1:]
 cube_name = args[0]
@@ -26,10 +28,11 @@ with urllib.request.urlopen(url) as request:
 mystr = mybytes.decode("utf8")
 
 card_names = mystr.split("\n")
+model_dir = Path('ml_files/20210408/model')
 
 print ('Loading Card Name Lookup . . . \n')
 
-with open('data/maps/int_to_card.json', 'rb') as map_file:
+with open(model_dir / 'int_to_card.json', 'rb') as map_file:
     int_to_card = json.load(map_file)
 int_to_card = {int(k):v for k,v in enumerate(int_to_card)}
 card_to_int = {v:k for k,v in int_to_card.items()}
@@ -48,9 +51,9 @@ for name in card_names:
 cube = np.zeros(num_cards)
 cube[cube_indices] = 1
 
-print('Loading Model . . . \n')
+print(f'Loading Model {model_dir}. . . \n')
 
-model = load_model('ml_files/20210407')
+model = load_model(model_dir)
 
 # def encode(model,data):
 #     return model.encoder.bottleneck(

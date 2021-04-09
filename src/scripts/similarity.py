@@ -1,20 +1,24 @@
 import json
+import sys
+from pathlib import Path
+
+import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import CosineSimilarity
-import sys
-import numpy as np
 
 args = sys.argv[1:]
 name = args[0].replace('_',' ')
 N = int(args[1])
+model_dir = Path('ml_files/20210408/model')
 
-int_to_card = json.load(open('data/maps/int_to_card.json','rb'))
+with open(model_dir / 'int_to_card.json', 'rb') as map_file:
+    int_to_card = json.load(map_file)
 int_to_card = {int(k):v for k,v in enumerate(int_to_card)}
 card_to_int = {v:k for k,v in int_to_card.items()}
 
 num_cards = len(int_to_card)
 
-model = load_model('ml_files/20210407')
+model = load_model(model_dir)
 
 cards = np.zeros((num_cards,num_cards))
 np.fill_diagonal(cards,1)
