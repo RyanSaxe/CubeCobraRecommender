@@ -45,10 +45,11 @@ def embeddings():
     return jsonify(results)
 
 if __name__ == "__main__":
-    with open('data/maps/int_to_card.json', 'rb') as map_file:
+    model_path = Path('ml_files/20210407')
+    with open(model_path / 'int_to_card.json', 'rb') as map_file:
         int_to_card = json.load(map_file)
     int_to_card = {int(k): v for k, v in enumerate(int_to_card)}
     card_to_int = {v: k for k, v in int_to_card.items()}
 
-    model = keras.models.load_model("ml_files/20210407")
+    model = keras.models.load_model(model_path)
     app.run(host="0.0.0.0", port=8000, threaded=True)
