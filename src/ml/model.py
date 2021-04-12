@@ -21,7 +21,7 @@ class Encoder(Model):
     """
     Encoder part of the model -> compress dimensionality
     """
-    def __init__(self,name):
+    def __init__(self,name, embedding_activation='linear'):
         super().__init__()
         #self.input_drop = Dropout(0.2)
         self.encoded_1 = Dense(512, activation='relu', name=name + "_e1")
@@ -30,7 +30,7 @@ class Encoder(Model):
         #self.e2_drop = Dropout(0.5)
         self.encoded_3 = Dense(128, activation='relu', name=name + "_e3")
         #self.e3_drop = Dropout(0.2)
-        self.bottleneck = Dense(64, activation='relu', name=name + "_bottleneck")
+        self.bottleneck = Dense(64, activation=embedding_activation, name=name + "_bottleneck")
     
     def call(self, x, training=None):
         encoded = self.encoded_1(x)
@@ -84,20 +84,20 @@ class CC_Recommender(Model):
     AutoEncoder build as a recommender system based on the following idea:
 
         If our input is a binary vector where 1 represents the presence of an
-        item in a collection, then an autoencoder trained 
+        item in a collection, then an autoencoder trained.
     """
     def __init__(self,num_cards):
         super().__init__()
         self.N = num_cards
-        self.encoder = Encoder("encoder")
+        self.encoder = Encoder("encoder", embedding_activation='linear')
         #sigmoid because input is a binary vector we want to reproduce
-        self.decoder = Decoder("main",self.N,output_act='sigmoid')
+        self.decoder = Decoder("main", self.N, output_act='sigmoid')
         #softmax because the graph information is probabilities
         #self.input_noise = Dropout(0.5)
         #self.latent_noise = Dropout(0.2)
         self.decoder_for_reg = Decoder("reg",self.N,output_act='softmax')
-    
-    def call(self, input, training=None):
+
+    def call(self, inputs, training=None):
         """
         input contains two things:
             input[0] = the binary vectors representing the collections
@@ -108,19 +108,25 @@ class CC_Recommender(Model):
         for collections still does a reasonable job compressing individual items.
         So a penalty term (regularization) is added to the model in the ability to
         reconstruct the probability distribution (adjacency matrix) on the item level
-        from the encoding. 
+        from the encoding.
 
         The hope is that this regularization enforces this conditional probability to be
         embedded in the recommendations. As the individual items must pull towards items
         represented strongly within the graph.
         """
-        x, identity = input
+        if isinstance(inputs, tuple):
+            x, identity = inputs
+            encode_for_reg = self.encoder(identity)
+            reconstructed_for_reg = self.decoder(encode_for_reg)
+            # latent_for_reg = self.latent_noise(encode_for_reg)
+            decoded_for_reg = self.decoder_for_reg(encode_for_reg)
+        else:
+            x = inputs
         # x = self.input_noise(x)
         encoded = self.encoder(x)
         # latent_for_reconstruct = self.latent_noise(encoded)
         reconstruction = self.decoder(encoded)
-        encode_for_reg = self.encoder(identity)
-        # latent_for_reg = self.latent_noise(encode_for_reg)
-        decoded_for_reg = self.decoder_for_reg(encode_for_reg)
-        # tf.summary.histogram('outputs/reconstruction', reconstruction)
-        return reconstruction, decoded_for_reg
+        if isinstance(inputs, tuple):
+            return reconstruction, reconstructed_for_reg, decoded_for_reg
+        else:
+            return reconstruction

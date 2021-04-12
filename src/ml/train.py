@@ -6,7 +6,7 @@ from pathlib import Path
 
 def is_valid_cube(cube):
     # return True
-    return cube['numDecks'] > 0 or len(cube['cards']) >= 90
+    return cube['numDecks'] > 0 and len(set(cube['cards'])) >= 120
 
 
 if __name__ == '__main__':
@@ -21,7 +21,8 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', '-e', type=int, help='The number of epochs to train for.')
     parser.add_argument('--batch-size', '-b', type=int, choices=[2**i for i in range(0, 16)], help='The number of cubes/cards to train on at a time.')
     parser.add_argument('--name', '-n', '-o', type=str, help='The folder under ml_files to save the model in.')
-    parser.add_argument('--regularization', '--reg', '-r', type=float, help='The relative weight of regularization vs reproducing the cube.')
+    parser.add_argument('--regularization', '--reg', '-r', default=1, type=float, help='The relative weight of regularization vs reproducing cubes.')
+    parser.add_argument('--card-reconstruction', '-cr', default=0.1, type=float, help='The relative weight of reconstructing individual cards vs reproducing cubes.')
     parser.add_argument('--noise', type=float, help='The mean number of random swaps to make per cube.')
     parser.add_argument('--noise-stddev', type=float, default=0.1, help="The standard deviation of the amount of noise to apply.")
     # parser.add_argument('--learning-rate', type=float, help="The initial learning rate.")
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     def load_neg_sampler():
         print('Loading Adjacency Matrix . . .\n')
         adj_mtx = np.load('data/adj_mtx.npy')
+        np.fill_diagonal(adj_mtx, 1)
         neg_sampler = adj_mtx.sum(0) / adj_mtx.sum()
         return neg_sampler
 
@@ -71,10 +73,9 @@ if __name__ == '__main__':
 
     cube_includes, cube_excludes = load_cubes()
     neg_sampler = load_neg_sampler()
-    neg_sampler_exclude = [neg_sampler[excludes] / neg_sampler[excludes].sum() for excludes in cube_excludes]
     task_queue = multiprocessing.Queue()
     batch_queue = multiprocessing.Queue()
-    processes = [multiprocessing.Process(target=gen_worker, args=(task_queue, batch_queue, neg_sampler_exclude, cube_includes, cube_excludes, neg_sampler)) for _ in range(args.num_workers)]
+    processes = [multiprocessing.Process(target=gen_worker, args=(task_queue, batch_queue, cube_includes, cube_excludes, neg_sampler)) for _ in range(args.num_workers)]
     for process in processes:
         process.start()
 
@@ -139,9 +140,13 @@ if __name__ == '__main__':
         autoencoder.compile(
             # optimizer=tf.keras.optimizers.Adam(learning_rate=args.learning_rate),
             optimizer='adam',
-            loss=['binary_crossentropy', 'kullback_leibler_divergence'],
-            loss_weights=[1.0, args.regularization],
-            metrics=[('accuracy', tf.keras.metrics.Recall(), tf.keras.metrics.Precision()), ('accuracy',)],
+            loss=['binary_crossentropy', 'binary_crossentropy', 'kullback_leibler_divergence'],
+            loss_weights=[1.0, args.card_reconstruction, args.regularization],
+            metrics=[
+                (tf.keras.metrics.Recall(), tf.keras.metrics.Precision()),
+                (tf.keras.metrics.Recall(), tf.keras.metrics.Precision()),
+                ('accuracy',)
+            ],
         )
 
         output.mkdir(exist_ok=True, parents=True)

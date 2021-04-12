@@ -1,3 +1,4 @@
+import argparse
 import json
 import sys
 import urllib.request
@@ -7,112 +8,82 @@ import numpy as np
 import unidecode
 from tensorflow.keras.models import load_model
 
-args = sys.argv[1:]
-cube_name = args[0]
-non_json = True
-root = "https://cubecobra.com"
-if len(args) > 1:
-    amount = int(args[1])
-    if len(args) > 2:
-        root = args[2]
-        non_json = False
-else:
-    amount = 100
+DEFAULT_COUNT = 25
+DEFAULT_MODEL = '20210409'
+DEFAULT_JSON = False
+DEFAULT_ROOT = 'https://cubecobra.com'
 
-print('Getting Cube List . . . \n')
+def recommend_changes(cube, count=DEFAULT_COUNT, model=DEFAULT_MODEL, use_json=DEFAULT_JSON, root=DEFAULT_ROOT):
+    print('Getting Cube List . . . \n')
 
-url = root + "/cube/api/cubelist/" + cube_name
+    url = root + "/cube/api/cubelist/" + cube
 
-with urllib.request.urlopen(url) as request:
-    mybytes = request.read()
-mystr = mybytes.decode("utf8")
+    with urllib.request.urlopen(url) as request:
+        mybytes = request.read()
+    mystr = mybytes.decode("utf8")
 
-card_names = mystr.split("\n")
-model_dir = Path('ml_files/20210409')
+    card_names = mystr.split("\n")
+    model_dir = Path('ml_files') / model
 
-print ('Loading Card Name Lookup . . . \n')
+    print ('Loading Card Name Lookup . . . \n')
 
-with open(model_dir / 'int_to_card.json', 'rb') as map_file:
-    int_to_card = json.load(map_file)
-int_to_card = {int(k):v for k,v in enumerate(int_to_card)}
-card_to_int = {v:k for k,v in int_to_card.items()}
+    with open(model_dir / 'int_to_card.json', 'rb') as map_file:
+        int_to_card = json.load(map_file)
+    card_to_int = {v:k for k,v in enumerate(int_to_card)}
 
-num_cards = len(int_to_card)
+    num_cards = len(int_to_card)
 
-print ('Creating Cube Vector . . . \n')
+    print ('Creating Cube Vector . . . \n')
 
-cube_indices = []
-for name in card_names:
-    idx = card_to_int.get(unidecode.unidecode(name.lower()))
-    #skip unknown cards (e.g. custom cards)
-    if idx is not None:
-        cube_indices.append(idx)
+    cube_indices = [card_to_int[unidecode.unidecode(name.lower())]
+                    for name in card_names if unidecode.unidecode(name.lower()) in card_to_int]
+    one_hot_cube = np.zeros(num_cards)
+    one_hot_cube[cube_indices] = 1
 
-cube = np.zeros(num_cards)
-cube[cube_indices] = 1
+    print(f'Loading Model {model_dir}. . . \n')
 
-print(f'Loading Model {model_dir}. . . \n')
+    loaded_model = load_model(model_dir)
 
-model = load_model(model_dir)
+    print ('Generating Recommendations . . . \n')
 
-# def encode(model,data):
-#     return model.encoder.bottleneck(
-#         model.encoder.encoded_3(
-#             model.encoder.encoded_2(
-#                 model.encoder.encoded_1(
-#                     data
-#                 )
-#             )
-#         )
-#     )
+    one_hot_cube = one_hot_cube.reshape(1, num_cards)
+    results = loaded_model.decoder(loaded_model.encoder(one_hot_cube))[0].numpy()
 
-# def decode(model,data):
-#     return model.decoder.reconstruct(
-#         model.decoder.decoded_3(
-#             model.decoder.decoded_2(
-#                 model.decoder.decoded_1(
-#                     data
-#                 )
-#             )
-#         )
-#     )
+    ranked = results.argsort()[::-1]
 
-def recommend(model,data):
-    encoded = model.encoder(data,training=False)
-    return model.decoder(encoded,training=False)
+    output = {
+        'additions':dict(),
+        'cuts':dict(),
+    }
+    output_str = ''
 
-print ('Generating Recommendations . . . \n')
-
-cube = np.array(cube, dtype=float).reshape(1, num_cards)
-results = recommend(model, cube)[0].numpy()
-
-ranked = results.argsort()[::-1]
-
-output = {
-    'additions':dict(),
-    'cuts':dict(),
-}
-
-recommended = 0
-for i, rec in enumerate(ranked):
-    if cube[0][rec] != 1:
+    cuts = []
+    adds = []
+    for i, rec in enumerate(ranked):
         card = int_to_card[rec]
-        if non_json:
-            print(card, results[card_to_int[card]])
-        else:
-            output['additions'][card] = results[rec].item()
-        recommended += 1
-        if recommended >= amount:
-            break
+        if one_hot_cube[0][rec] == 0 and len(adds) < count:
+            adds.append((card, results[rec]))
+        elif one_hot_cube[0][rec] == 1:
+            cuts.append((card, results[rec]))
+    cuts = cuts[-count:]
+    if use_json:
+        return json.dumps({
+            'additions': {name: value.item() for name, value in adds},
+            'cuts': {name: value.item() for name, value in cuts}
+        })
+    else:
+        adds_str = '\n'.join(f'{name}: {value}' for name, value in adds)
+        cuts_str = '\n'.join(f'{name}: {value}' for name, value in cuts)
+        return f'{adds_str}\n...\n{cuts_str}'
 
-for idx in cube_indices:
-    card = int_to_card[idx]
-    output['cuts'][card] = results[idx].item()
 
-if non_json:
-    cards = list(output['cuts'].keys())
-    vals = list(output['cuts'].values())
-    rank_cuts = np.array(vals).argsort()
-    out = [cards[idx] for idx in rank_cuts[:amount]]
-    print('\n')
-    for i,item in enumerate(out): print(item,vals[rank_cuts[i]])
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cube', '-c', help='The id or short name of the cube to recommend for.')
+    parser.add_argument('--count', '--number', '-n', default=DEFAULT_COUNT, type=int, help='The number of recommended cuts and additions to recommend.')
+    parser.add_argument('--model', '-m', default=DEFAULT_MODEL, help='The path under ml_files to the model to use for recommendations.')
+    parser.add_argument('--json', dest='use_json', action='store_true', help='Output the results as json instead of plain text.')
+    parser.add_argument('--root', default=DEFAULT_ROOT, help='The base url for the CubeCobra instance to retrieve the cube from.')
+    args = parser.parse_args()
+
+    print(recommend_changes(**vars(args)))

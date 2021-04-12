@@ -10,13 +10,14 @@ def load_adj_mtx():
     print('Loading Adjacency Matrix . . .\n')
     adj_mtx = np.load('data/adj_mtx.npy')
     np.fill_diagonal(adj_mtx, 1)
-    return adj_mtx
+    y_mtx = adj_mtx / adj_mtx.sum(1)[:, None]
+    return y_mtx
 
-def gen_worker(task_queue, done_queue, neg_sampler_excludes, cube_includes, cube_excludes, neg_sampler):
+def gen_worker(task_queue, done_queue, cube_includes, cube_excludes, neg_sampler):
     for args in iter(task_queue.get, 'STOP'):
-        done_queue.put(generate_data(*args, neg_sampler_excludes, cube_includes, cube_excludes, neg_sampler))
+        done_queue.put(generate_data(*args, cube_includes, cube_excludes, neg_sampler))
 
-def generate_data(top_level_indices, to_fit, noise, noise_std, neg_samplers, cube_includes, cube_excludes, neg_sampler):
+def generate_data(top_level_indices, to_fit, noise, noise_std, cube_includes, cube_excludes, neg_sampler):
     cut_mask = []
     add_mask = []
     y_cut_mask = []
@@ -32,25 +33,35 @@ def generate_data(top_level_indices, to_fit, noise, noise_std, neg_samplers, cub
             a_min=0.05,
             a_max=0.95,
         )
-        flip_amount = min(int(size * noise), size - 1)
+        flip_amount = min(max(int(size * noise), 1), size - 1)
         to_exclude = np.random.choice(includes, flip_amount, replace=False)
         if len(excludes) < flip_amount:
             to_include = excludes
         else:
-            neg_sampler_exclude = neg_samplers[cube_index]
+            neg_sampler_exclude = neg_sampler[excludes] / neg_sampler[excludes].sum()
             to_include = np.random.choice(excludes, flip_amount, p=neg_sampler_exclude, replace=False)
             to_include = list(set(to_include))
-        y_to_exclude = np.random.choice(to_exclude, flip_amount // 4, replace=False)
+        neg_sampler_y_include = neg_sampler[to_exclude]
+        if neg_sampler_y_include.sum() == 0:
+            print('neg_sampler_y_include sum:', neg_sampler_y_include.sum(), 'len:', len(neg_sampler_y_include), 'to_exclude len:', len(to_exclude), 'includes len:', len(includes))
+            neg_sampler_y_include = np.ones_like(neg_sampler_y_include) / flip_amount
+        neg_sampler_y_include = neg_sampler_y_include / neg_sampler_y_include.sum()
+        y_to_exclude = np.random.choice(to_exclude, flip_amount // 4, p=neg_sampler_y_include, replace=False)
 
         cube_indices.append(includes)
         cut_mask.append(to_exclude)
         y_cut_mask.append(y_to_exclude)
         add_mask.append(to_include)
     if to_fit:
+        # reg_indices = np.random.choice(
+        #     len(neg_sampler),
+        #     len(top_level_indices),
+        #     p=neg_sampler,
+        #     replace=False,
+        # )
         reg_indices = np.random.choice(
             len(neg_sampler),
             len(top_level_indices),
-            p=neg_sampler,
             replace=False,
         )
         return (cube_indices, cut_mask, y_cut_mask, add_mask), reg_indices
@@ -82,8 +93,7 @@ def create_sequence(*args, **kwargs):
             self.noise = noise
             self.N_cubes = num_cubes
             self.N_cards = num_cards
-            adj_mtx = load_adj_mtx()
-            self.y_reg = (adj_mtx/adj_mtx.sum(1)[:, None])
+            self.y_reg = load_adj_mtx()
             # Initialize other needed inputs
             self.indices = np.arange(self.N_cubes)
             self.processes = processes
@@ -134,7 +144,7 @@ def create_sequence(*args, **kwargs):
             cards_x = np.zeros((self.batch_size, self.N_cards))
             cards_x[list(range(len(reg_indices))), reg_indices] = 1
             cards_y = self.y_reg[reg_indices]
-            return (cube_x, cards_x), (cube_y, cards_y)
+            return (cube_x, cards_x), (cube_y, cards_x, cards_y)
 
 
         def reset_indices(self):

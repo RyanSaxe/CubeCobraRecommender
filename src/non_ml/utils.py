@@ -104,6 +104,32 @@ def build_decks(cube_folder, num_decks, num_cards,
     return decks
 
 
+def build_mtx(deck_folder, num_cards,
+              card_to_int, validation_func=lambda _: True,
+              soft_validation=0):
+    adj_mtx = np.zeros((num_cards, num_cards), dtype=np.uint32)
+    for filename in deck_folder.iterdir():
+        with open(filename, 'rb') as deck_file:
+            contents = json.load(deck_file)
+        for deck in contents:
+            if soft_validation > 0 or validation_func(deck):
+                card_ids = []
+                for card_name in deck['main']:
+                    if card_name is not None:
+                        card_id = card_to_int.get(card_name, None)
+                        if card_id is not None:
+                            card_ids.append(card_id)
+                weight = 1 if validation_func(deck) else 0
+                if not validation_func(deck):
+                    weight = soft_validation
+                for i, id1 in enumerate(card_ids):
+                    adj_mtx[id1, id1] += weight
+                    for id2 in card_ids[:i]:
+                        adj_mtx[id1, id2] += weight
+                        adj_mtx[id2, id1] += weight
+    return adj_mtx
+
+
 def create_adjacency_matrix(decks, verbose=True, force_diag=None):
     num_cards = decks.shape[1]
     adj_mtx = np.empty((num_cards, num_cards))

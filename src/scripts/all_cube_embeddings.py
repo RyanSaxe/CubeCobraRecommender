@@ -4,12 +4,14 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
+import tensorflow as tf
 import unidecode
 from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import CosineSimilarity
 
 args = sys.argv[1:]
-model_dir = Path('ml_files/20210409')
+model_name = args[0]
+model_dir = Path('ml_files') / model_name
 
 non_json = True
 root = "https://cubecobra.com"
@@ -41,7 +43,8 @@ num_objs = 0
 for filename in cube_folder.iterdir():
     with open(filename, 'rb') as obj_file:
         contents = json.load(obj_file)
-    num_objs += len([obj for obj in contents if obj['numDecks'] > 0 or len(obj['cards']) >= 90])
+    num_objs += len([obj for obj in contents if obj['numDecks'] > 0 and len(obj['cards']) >= 120])
+print(f'There are {num_objs} cubes.')
 cubes = np.zeros((num_objs, num_cards))
 cube_ids = ['' for _ in range(num_objs)]
 counter = 0
@@ -49,7 +52,7 @@ for filename in cube_folder.iterdir():
     with open(filename, 'rb') as cube_file:
         contents = json.load(cube_file)
     for cube in contents:
-        if cube['numDecks'] > 0 or len(cube['cards']) >= 90:
+        if cube['numDecks'] > 0 and len(cube['cards']) >= 120:
             card_ids = []
             for card_name in cube['cards']:
                 if card_name is not None:
@@ -64,15 +67,28 @@ np.fill_diagonal(cards, 1)
 
 model = load_model(model_dir)
 
-cube_embs = model.encoder(cubes).numpy()
-card_embs = model.encoder(cards).numpy()
+print('Getting cube embeddings.')
+cube_embs = model.encoder(cubes)
+print('Getting card embeddings.')
+card_embs = model.encoder(cards)
+print('Normalizing cube embeddings.')
+cube_embs_normal = tf.math.divide_no_nan(cube_embs, tf.norm(cube_embs, axis=1, keepdims=True))
+print('Normalizing card embeddings.')
+card_embs_normal = tf.math.divide_no_nan(card_embs, tf.norm(card_embs, axis=1, keepdims=True))
 
-cube_emb_tsv = '\n'.join('\t'.join(str(x) for x in cube_emb) for cube_emb in cube_embs)
-card_emb_tsv = '\n'.join('\t'.join(str(x) for x in card_emb) for card_emb in card_embs)
-with open(model_dir / 'embedding.tsv', 'w') as embedding_file:
-    embedding_file.write(f'{cube_emb_tsv}\n{card_emb_tsv}')
-
+print('Saving metadata.')
 cube_label_tsv = '\n'.join(f'{cube_id}\tCube' for cube_id in cube_ids)
 card_label_tsv = '\n'.join(f'{card_name}\tCard' for card_name in int_to_card)
 with open(model_dir / 'embedding_labels.tsv', 'w') as embedding_labels_file:
     embedding_labels_file.write(f'Name/Id\tType\n{cube_label_tsv}\n{card_label_tsv}')
+
+def write_embeddings(cubes, cards, suffix=''):
+    cube_emb_tsv = '\n'.join('\t'.join(str(x) for x in cube_emb) for cube_emb in cubes.numpy())
+    card_emb_tsv = '\n'.join('\t'.join(str(x) for x in card_emb) for card_emb in cards.numpy())
+    with open(model_dir / f'embedding{suffix}.tsv', 'w') as embedding_file:
+        embedding_file.write(f'{cube_emb_tsv}\n{card_emb_tsv}')
+
+print('Saving unnormalized embeddings.')
+write_embeddings(cube_embs, card_embs)
+print('Saving normalized embeddings.')
+write_embeddings(cube_embs_normal, card_embs_normal, suffix='normal')
