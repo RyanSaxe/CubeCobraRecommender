@@ -41,12 +41,13 @@ def generate_data(top_level_indices, to_fit, noise, noise_std, cube_includes, cu
             neg_sampler_exclude = neg_sampler[excludes] / neg_sampler[excludes].sum()
             to_include = np.random.choice(excludes, flip_amount, p=neg_sampler_exclude, replace=False)
             to_include = list(set(to_include))
-        neg_sampler_y_include = neg_sampler[to_exclude]
-        if neg_sampler_y_include.sum() == 0:
-            print('neg_sampler_y_include sum:', neg_sampler_y_include.sum(), 'len:', len(neg_sampler_y_include), 'to_exclude len:', len(to_exclude), 'includes len:', len(includes))
-            neg_sampler_y_include = np.ones_like(neg_sampler_y_include) / flip_amount
-        neg_sampler_y_include = neg_sampler_y_include / neg_sampler_y_include.sum()
-        y_to_exclude = np.random.choice(to_exclude, flip_amount // 4, p=neg_sampler_y_include, replace=False)
+        # neg_sampler_y_include = neg_sampler[to_exclude]
+        # if neg_sampler_y_include.sum() == 0:
+        #     print('neg_sampler_y_include sum:', neg_sampler_y_include.sum(), 'len:', len(neg_sampler_y_include), 'to_exclude len:', len(to_exclude), 'includes len:', len(includes))
+        #     neg_sampler_y_include = np.ones_like(neg_sampler_y_include) / flip_amount
+        # neg_sampler_y_include = neg_sampler_y_include / neg_sampler_y_include.sum()
+        # y_to_exclude = np.random.choice(to_exclude, flip_amount // 4, p=neg_sampler_y_include, replace=False)
+        y_to_exclude = []
 
         cube_indices.append(includes)
         cut_mask.append(to_exclude)
@@ -125,7 +126,7 @@ def create_sequence(*args, **kwargs):
             """
             if self.task_queue.empty() and self.batch_queue.qsize() < len(self):
                  self.reset_indices()
-            batched_data, reg_indices = self.batch_queue.get(True, 5)
+            batched_data, reg_indices = self.batch_queue.get(True)
             cube_x = np.zeros((self.batch_size, self.N_cards))
             cube_y = np.zeros((self.batch_size, self.N_cards))
             for i, data in enumerate(zip(*batched_data)):
@@ -134,13 +135,7 @@ def create_sequence(*args, **kwargs):
                 cube_x[i, cut_mask] = 0
                 cube_x[i, add_mask] = 1
                 cube_y[i, includes] = 1
-                cube_y[i, y_cut_mask] = 0
-            bad_indices_x = np.where((cube_x != 0) & (cube_x != 1))
-            bad_indices_y = np.where((cube_y != 0) & (cube_y != 1))
-            if len(bad_indices_x[0]) > 0:
-                print('Bad x', cube_x[bad_indices_x])
-            if len(bad_indices_y[0]) > 0:
-                print('Bad y', cube_y[bad_indices_y])
+                # cube_y[i, y_cut_mask] = 0
             cards_x = np.zeros((self.batch_size, self.N_cards))
             cards_x[list(range(len(reg_indices))), reg_indices] = 1
             cards_y = self.y_reg[reg_indices]

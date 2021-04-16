@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', '-b', type=int, choices=[2**i for i in range(0, 16)], help='The number of cubes/cards to train on at a time.')
     parser.add_argument('--name', '-n', '-o', type=str, help='The folder under ml_files to save the model in.')
     parser.add_argument('--regularization', '--reg', '-r', default=1, type=float, help='The relative weight of regularization vs reproducing cubes.')
-    parser.add_argument('--card-reconstruction', '-cr', default=0.1, type=float, help='The relative weight of reconstructing individual cards vs reproducing cubes.')
+    parser.add_argument('--card-reconstruction', '--card-rec', '-cr', default=0.1, type=float, help='The relative weight of reconstructing individual cards vs reproducing cubes.')
     parser.add_argument('--noise', type=float, help='The mean number of random swaps to make per cube.')
     parser.add_argument('--noise-stddev', type=float, default=0.1, help="The standard deviation of the amount of noise to apply.")
     # parser.add_argument('--learning-rate', type=float, help="The initial learning rate.")
@@ -137,16 +137,33 @@ if __name__ == '__main__':
         if latest is not None:
             print('Loading Checkpoint. Saved values are:')
             autoencoder.load_weights(latest)
+        THRESHOLDS=[0.1, 0.25, 0.5, 0.75, 0.9]
         autoencoder.compile(
             # optimizer=tf.keras.optimizers.Adam(learning_rate=args.learning_rate),
             optimizer='adam',
-            loss=['binary_crossentropy', 'binary_crossentropy', 'kullback_leibler_divergence'],
+            loss=[
+                tf.keras.losses.BinaryCrossentropy(name='cube_loss'),
+                tf.keras.losses.CategoricalCrossentropy(name='card_loss'),
+                tf.keras.losses.KLDivergence(name='adj_mtx_loss'),
+            ],
             loss_weights=[1.0, args.card_reconstruction, args.regularization],
             metrics=[
-                (tf.keras.metrics.Recall(), tf.keras.metrics.Precision()),
-                (tf.keras.metrics.Recall(), tf.keras.metrics.Precision()),
-                ('accuracy',)
+                (
+                    tf.keras.metrics.Recall(THRESHOLDS, name='cube_recall'),
+                    tf.keras.metrics.PrecisionAtRecall(0.5, name='cube_prec_at_recall'),
+                    tf.keras.metrics.Precision(THRESHOLDS, name='cube_precision'),
+                ),
+                (
+                    tf.keras.metrics.Recall(THRESHOLDS, name='card_recall'),
+                    tf.keras.metrics.PrecisionAtRecall(0.99, name='card_prec_at_recall'),
+                    tf.keras.metrics.CategoricalAccuracy(name='card_accuracy'),
+                ),
+                (
+                    tf.keras.metrics.Accuracy(name='adj_mtx_accuracy'),
+                    tf.keras.metrics.MeanAbsoluteError(name='adj_mtx_error'),
+                ),
             ],
+            from_serialized=True,
         )
 
         output.mkdir(exist_ok=True, parents=True)
@@ -173,7 +190,7 @@ if __name__ == '__main__':
         callbacks.append(mcp_callback)
         callbacks.append(nan_callback)
         callbacks.append(tb_callback)
-        callbacks.append(lr_callback)
+        # callbacks.append(lr_callback)
         # callbacks.append(es_callback)
 
         print('Starting training')
@@ -181,6 +198,7 @@ if __name__ == '__main__':
             generator,
             epochs=args.epochs,
             callbacks=callbacks,
+            verbose=2,
         )
         print('Saving final model')
         autoencoder.save(output, save_format='tf')

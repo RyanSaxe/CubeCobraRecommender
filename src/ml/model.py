@@ -117,7 +117,8 @@ class CC_Recommender(Model):
         if isinstance(inputs, tuple):
             x, identity = inputs
             encode_for_reg = self.encoder(identity)
-            reconstructed_for_reg = self.decoder(encode_for_reg)
+            reconstructed_for_reg = self.decoder(encode_for_reg) + 1e-08
+            reconstructed_for_reg = tf.math.divide_no_nan(reconstructed_for_reg, tf.reduce_sum(reconstructed_for_reg, 1, keepdims=True))
             # latent_for_reg = self.latent_noise(encode_for_reg)
             decoded_for_reg = self.decoder_for_reg(encode_for_reg)
         else:
