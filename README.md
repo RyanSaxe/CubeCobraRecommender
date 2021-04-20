@@ -32,7 +32,7 @@ running `python src/scripts/create_mtx.py` will create a local version of the ad
 
 It is recommended that you train the model with
 
-`python setup.py install && python -m src.ml.train -e 500 -b 64 -n <model_name> --reg 1 --card-rec 0.02 --noise 0.5 --noise-stddev 0.1 --seed <positive_int> -j 4 --xla`
+`python setup.py install && python -m src.ml.train -e 500 -b 64 -n <model_name> --reg 1 --noise 0.5 --noise-stddev 0.1 --seed <positive_int> -j 4 --xla`
 
 You will need a C++20 compatible compiler and to initialize the submodules with `git submodule update --init --recursive`
 
