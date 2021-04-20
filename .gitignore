@@ -4,4 +4,9 @@ output/
 venv/
 __pycache__/
 .mypy_cache/
-.venv/
+.venv*/
+_skbuild/
+logs/
+.idea/
+cubecobra_recommender_generator.egg-info/
+dist/

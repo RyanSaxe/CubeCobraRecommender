@@ -28,6 +28,14 @@ Loss = BinaryCrossEntropy( X, D1(E(DO( X, 0.2 ))) ) + 0.001 * KL-Divergence( M, 
 
 running `python src/scripts/create_mtx.py` will create a local version of the adjacency matrix as well as a lookup dictionary. This will be stored in the `outputs` folder. It is in `.gitignore`, so make sure to create a local version.
 
+## Training the model
+
+It is recommended that you train the model with
+
+`python setup.py install && python -m src.ml.train -e 500 -b 64 -n <model_name> --reg 1 --card-rec 0.02 --noise 0.5 --noise-stddev 0.1 --seed <positive_int> -j 4 --xla`
+
+You will need a C++20 compatible compiler and to initialize the submodules with `git submodule update --init --recursive`
+
 ## Generating Recommendations
 
 After generating the adjacency matrix, given any cube list, you can get the top N recommendations. To do this, run `python src/scripts/recommend.py cube_id N`. For example, if I wanted the top 50 recommendations for my [Combat Cube](https://cubecobra.com/cube/list/combat), I would run `python src/scripts/recommend.py combat 50`.

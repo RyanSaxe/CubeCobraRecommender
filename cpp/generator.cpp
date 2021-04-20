@@ -49,19 +49,9 @@ std::valarray<std::size_t> sample_no_replacement(const std::size_t count, std::v
     return results;
 }
 
-std::valarray<double> compute_y_mtx(std::valarray<double> adj_mtx, const std::size_t num_cards) {
-    for (size_t i=0; i < num_cards; i++) {
-        const std::valarray<double> row{adj_mtx[std::slice(i * num_cards, num_cards, 1)]};
-        const double sum = row.sum();
-        if (sum == 0) adj_mtx[i * (num_cards + 1)] = 1;
-        else adj_mtx[std::slice(i * num_cards, num_cards, 1)] /= std::valarray(sum, num_cards);
-    }
-    return adj_mtx;
-}
-
 struct Generator {
     using result_type = std::tuple<std::tuple<py::array_t<double>, py::array_t<double>>,
-                                   std::tuple<py::array_t<double>, py::array_t<double>, py::array_t<double>>>;
+                                   std::tuple<py::array_t<double>, py::array_t<double>>>;
     using queue_values = std::tuple<std::array<std::size_t, 2>,
                                     std::tuple<std::valarray<double>, std::valarray<double>>,
                                     std::tuple<std::valarray<double>, std::valarray<double>>>;
@@ -99,14 +89,20 @@ public:
               num_threads{num_workers},
               max_batch_size{batch_size}, length{(num_cubes + batch_size - 1) / batch_size},
               initial_seed{seed},
+              x_mtx({cubes.data(), static_cast<std::size_t>(cubes.size())}),
+              y_mtx({adj_mtx.data(), static_cast<std::size_t>(adj_mtx.size())}),
               neg_sampler(num_cards), true_indices(num_cards),
               replacing_neg_sampler(num_cards),
               noise_dist(noise, noise_std), main_rng{initial_seed, num_threads},
               task_producer{task_queue}, result_consumer{result_queue}
     {
         py::gil_scoped_release release;
-        y_mtx = compute_y_mtx(std::valarray<double>(adj_mtx.data(), static_cast<std::size_t>(adj_mtx.size())), num_cards);
-        x_mtx = std::valarray(cubes.data(), static_cast<std::size_t>(cubes.size()));
+        for (size_t i=0; i < num_cards; i++) {
+            const std::valarray<double> row{y_mtx[std::slice(i * num_cards, num_cards, 1)]};
+            const double sum = row.sum();
+            if (sum == 0) y_mtx[i * (num_cards + 1)] = 1;
+            else y_mtx[std::slice(i * num_cards, num_cards, 1)] /= std::valarray(sum, num_cards);
+        }
         std::vector<std::pair<double, std::size_t>> sortable_sampler;
         sortable_sampler.reserve(num_cards);
         for (size_t i=0; i < num_cards; i++) {
@@ -159,7 +155,7 @@ public:
 
     result_type next() {
         queue_values result;
-        if (task_queue.size_approx() < num_threads && result_queue.size_approx() < max_batch_size) queue_new_epoch();
+        if (task_queue.size_approx() < num_threads && result_queue.size_approx() < 2 * max_batch_size) queue_new_epoch();
         result_queue.wait_dequeue(result_consumer, result);
         return {
             {
@@ -168,7 +164,6 @@ public:
             },
             {
                 py::array_t<double>(std::get<0>(result), &std::get<0>(std::get<2>(result))[0]),
-                py::array_t<double>(std::get<0>(result), &std::get<1>(std::get<1>(result))[0]),
                 py::array_t<double>(std::get<0>(result), &std::get<1>(std::get<2>(result))[0]),
             },
         };
@@ -189,16 +184,17 @@ public:
         auto to_include = sample_no_replacement(to_flip, neg_sampler * x1, true_indices, rng);
         std::valarray<double> to_exclude_sampler(0.0, num_cards);
         to_exclude_sampler[to_exclude] = neg_sampler[to_exclude];
-        auto y_to_exclude = sample_no_replacement(to_flip / 4, to_exclude_sampler, true_indices, rng);
+        auto y_to_exclude = sample_no_replacement(to_flip / 8, to_exclude_sampler, true_indices, rng);
 
         x1[to_exclude] = 0;
         x1[to_include] = 1;
         y1[y_to_exclude] = 0;
 
-        const double rand_value = neg_sampler_rand(rng);
-        auto found_iter = std::upper_bound(std::begin(replacing_neg_sampler), std::end(replacing_neg_sampler), rand_value);
-        const std::size_t card_index = found_iter != std::end(replacing_neg_sampler) ? std::distance(std::begin(replacing_neg_sampler), found_iter) : replacing_neg_sampler.size() - 1;
-        const std::size_t actual_index = true_indices[card_index];
+        /* const double rand_value = neg_sampler_rand(rng); */
+        /* auto found_iter = std::upper_bound(std::begin(replacing_neg_sampler), std::end(replacing_neg_sampler), rand_value); */
+        /* const std::size_t card_index = found_iter != std::end(replacing_neg_sampler) ? std::distance(std::begin(replacing_neg_sampler), found_iter) : replacing_neg_sampler.size() - 1; */
+        /* const std::size_t actual_index = true_indices[card_index]; */
+        const std::size_t actual_index = std::uniform_int_distribution<std::size_t>(0, num_cards - 1)(rng);
 
         std::valarray<double> x2(0.0, num_cards);
         x2[actual_index] = 1;
