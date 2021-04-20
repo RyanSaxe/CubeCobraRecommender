@@ -10,3 +10,4 @@ logs/
 .idea/
 cubecobra_recommender_generator.egg-info/
 dist/
+ml_files/

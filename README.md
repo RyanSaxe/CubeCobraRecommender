@@ -42,6 +42,8 @@ After generating the adjacency matrix, given any cube list, you can get the top 
 
 If you would like a recommendation on cards to cut, rather than cards to add, run `python src/scripts/cut_cards.py cube_id N`.
 
+We no longer store models in the repository so you'll have to train the model yourself as directed above.
+
 Lastly, if you would like recommendations from the machine learning algorithm rather than the adjacency matrix, run `python src/scripts/ml_recommend.py cube_id N`
 
 ## Git - LFS
